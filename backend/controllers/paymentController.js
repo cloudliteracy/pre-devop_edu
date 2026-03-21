@@ -69,12 +69,48 @@ exports.verifyPayment = async (req, res) => {
   }
 };
 
+exports.verifyStripePayment = async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    const userId = req.user._id;
+
+    // Retrieve the Stripe session
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (session.payment_status === 'paid') {
+      // Find the payment record
+      const payment = await Payment.findOne({ transactionId: sessionId });
+
+      if (payment) {
+        // Update payment status
+        payment.status = 'completed';
+        await payment.save();
+
+        // Grant user access to module
+        await User.findByIdAndUpdate(userId, {
+          $addToSet: { purchasedModules: payment.moduleId }
+        });
+
+        return res.json({
+          success: true,
+          message: 'Payment verified successfully',
+          moduleId: payment.moduleId
+        });
+      }
+    }
+
+    res.status(400).json({ success: false, message: 'Payment not completed' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Verification failed', error: error.message });
+  }
+};
+
 async function handleStripePayment(module, payment) {
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: [{
       price_data: {
-        currency: 'xaf',
+        currency: 'usd',
         product_data: { name: module.title },
         unit_amount: module.price * 100
       },

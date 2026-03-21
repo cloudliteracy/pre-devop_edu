@@ -4,9 +4,10 @@ const Module = require('./models/Module');
 
 const modules = [
   {
-    title: "Introduction to DevOps",
+    title: "Introduction to Pre-DevOps",
     description: "Learn the fundamentals of DevOps culture, practices, and tools",
-    price: 5000,
+    price: 49,
+    currency: "USD",
     order: 1,
     pdfs: [],
     videos: [],
@@ -29,7 +30,8 @@ const modules = [
   {
     title: "Version Control with Git",
     description: "Master Git and GitHub for version control and collaboration",
-    price: 5000,
+    price: 49,
+    currency: "USD",
     order: 2,
     pdfs: [],
     videos: [],
@@ -47,7 +49,8 @@ const modules = [
   {
     title: "CI/CD Pipelines",
     description: "Build automated CI/CD pipelines with Jenkins and GitHub Actions",
-    price: 7000,
+    price: 69,
+    currency: "USD",
     order: 3,
     pdfs: [],
     videos: [],
@@ -56,7 +59,8 @@ const modules = [
   {
     title: "Containerization with Docker",
     description: "Learn Docker fundamentals and container orchestration",
-    price: 8000,
+    price: 79,
+    currency: "USD",
     order: 4,
     pdfs: [],
     videos: [],
@@ -65,7 +69,8 @@ const modules = [
   {
     title: "Kubernetes Essentials",
     description: "Deploy and manage applications with Kubernetes",
-    price: 10000,
+    price: 99,
+    currency: "USD",
     order: 5,
     pdfs: [],
     videos: [],
@@ -74,7 +79,8 @@ const modules = [
   {
     title: "Infrastructure as Code",
     description: "Automate infrastructure with Terraform and Ansible",
-    price: 9000,
+    price: 89,
+    currency: "USD",
     order: 6,
     pdfs: [],
     videos: [],
@@ -83,7 +89,8 @@ const modules = [
   {
     title: "Monitoring and Logging",
     description: "Implement monitoring with Prometheus, Grafana, and ELK Stack",
-    price: 8000,
+    price: 79,
+    currency: "USD",
     order: 7,
     pdfs: [],
     videos: [],

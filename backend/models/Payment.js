@@ -4,7 +4,7 @@ const paymentSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   moduleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Module', required: true },
   amount: { type: Number, required: true },
-  currency: { type: String, default: 'XAF' },
+  currency: { type: String, default: 'USD' },
   paymentMethod: { 
     type: String, 
     enum: ['mtn_momo', 'orange_money', 'stripe', 'paypal'],

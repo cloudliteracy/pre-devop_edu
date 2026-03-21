@@ -4,6 +4,7 @@ const moduleSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
   price: { type: Number, required: true },
+  currency: { type: String, default: 'USD' },
   order: { type: Number, required: true },
   pdfs: [{
     title: String,
