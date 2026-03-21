@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth');
 const moduleRoutes = require('./routes/modules');
 const paymentRoutes = require('./routes/payments');
 const quizRoutes = require('./routes/quiz');
+const ratingRoutes = require('./routes/ratings');
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/modules', moduleRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/quiz', quizRoutes);
+app.use('/api/ratings', ratingRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'CloudLiteracy API Server' });

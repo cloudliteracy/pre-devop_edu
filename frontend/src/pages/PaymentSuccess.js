@@ -11,37 +11,65 @@ const PaymentSuccess = () => {
   useEffect(() => {
     const verifyPayment = async () => {
       const sessionId = searchParams.get('session_id');
+      const token = searchParams.get('token');
       
-      if (!sessionId) {
+      if (sessionId) {
+        // Stripe payment
+        try {
+          const authToken = localStorage.getItem('token');
+          const response = await axios.post(
+            'http://localhost:5000/api/payments/verify-stripe',
+            { sessionId },
+            { headers: { Authorization: `Bearer ${authToken}` } }
+          );
+
+          if (response.data.success) {
+            setStatus('success');
+            if (response.data.isDonation) {
+              setMessage('Thank you for your generous donation!');
+              setTimeout(() => navigate('/'), 3000);
+            } else {
+              setMessage('Payment successful! Redirecting to your module...');
+              setTimeout(() => navigate(`/module/${response.data.moduleId}`), 3000);
+            }
+          } else {
+            setStatus('error');
+            setMessage('Payment verification failed');
+          }
+        } catch (error) {
+          setStatus('error');
+          setMessage(error.response?.data?.message || 'Payment verification failed');
+        }
+      } else if (token) {
+        // PayPal payment - token is the order ID
+        try {
+          const authToken = localStorage.getItem('token');
+          const response = await axios.post(
+            'http://localhost:5000/api/payments/verify-paypal',
+            { orderId: token },
+            { headers: { Authorization: `Bearer ${authToken}` } }
+          );
+
+          if (response.data.success) {
+            setStatus('success');
+            if (response.data.isDonation) {
+              setMessage('Thank you for your generous donation!');
+              setTimeout(() => navigate('/'), 3000);
+            } else {
+              setMessage('Payment successful! Redirecting to your module...');
+              setTimeout(() => navigate(`/module/${response.data.moduleId}`), 3000);
+            }
+          } else {
+            setStatus('error');
+            setMessage('Payment verification failed');
+          }
+        } catch (error) {
+          setStatus('error');
+          setMessage(error.response?.data?.message || 'Payment verification failed');
+        }
+      } else {
         setStatus('error');
         setMessage('No payment session found');
-        return;
-      }
-
-      try {
-        // Call backend to verify Stripe payment
-        const token = localStorage.getItem('token');
-        const response = await axios.post(
-          'http://localhost:5000/api/payments/verify-stripe',
-          { sessionId },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        if (response.data.success) {
-          setStatus('success');
-          setMessage('Payment successful! Redirecting to your module...');
-          
-          // Redirect to module after 3 seconds
-          setTimeout(() => {
-            navigate(`/module/${response.data.moduleId}`);
-          }, 3000);
-        } else {
-          setStatus('error');
-          setMessage('Payment verification failed');
-        }
-      } catch (error) {
-        setStatus('error');
-        setMessage(error.response?.data?.message || 'Payment verification failed');
       }
     };
 

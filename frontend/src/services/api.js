@@ -35,4 +35,9 @@ export const quizAPI = {
   submit: (moduleId, answers) => api.post(`/quiz/${moduleId}/submit`, { answers })
 };
 
+export const ratingAPI = {
+  submit: (rating) => api.post('/ratings', { rating }),
+  getStats: () => api.get('/ratings/stats')
+};
+
 export default api;

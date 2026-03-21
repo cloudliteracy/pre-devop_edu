@@ -4,17 +4,56 @@ import { AuthContext } from '../context/AuthContext';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useContext(AuthContext);
+  const [hoveredLink, setHoveredLink] = React.useState(null);
+
+  const getLinkStyle = (linkName) => ({
+    ...styles.link,
+    color: hoveredLink === linkName ? '#fff' : '#FFD700',
+    textShadow: hoveredLink === linkName ? '0 0 10px rgba(255, 215, 0, 0.8)' : 'none',
+    transform: hoveredLink === linkName ? 'translateY(-2px)' : 'translateY(0)'
+  });
 
   return (
     <nav style={styles.nav}>
       <div style={styles.container}>
-        <Link to="/" style={styles.logo}>
-          <span style={styles.logoIcon}>☁️</span>
-          CloudLiteracy
-        </Link>
+        <div style={styles.logoContainer}>
+          <Link to="/" style={styles.logo}>
+            <span style={styles.logoIcon}>☁️</span>
+            CloudLiteracy
+          </Link>
+          <Link 
+            to="/" 
+            style={getLinkStyle('home')}
+            onMouseEnter={() => setHoveredLink('home')}
+            onMouseLeave={() => setHoveredLink(null)}
+          >
+            Home
+          </Link>
+        </div>
         <div style={styles.menu}>
-          <Link to="/modules" style={styles.link}>
+          <Link 
+            to="/modules" 
+            style={getLinkStyle('modules')}
+            onMouseEnter={() => setHoveredLink('modules')}
+            onMouseLeave={() => setHoveredLink(null)}
+          >
             Modules
+          </Link>
+          <Link 
+            to="/about" 
+            style={getLinkStyle('about')}
+            onMouseEnter={() => setHoveredLink('about')}
+            onMouseLeave={() => setHoveredLink(null)}
+          >
+            About Us
+          </Link>
+          <Link 
+            to="/contact" 
+            style={getLinkStyle('contact')}
+            onMouseEnter={() => setHoveredLink('contact')}
+            onMouseLeave={() => setHoveredLink(null)}
+          >
+            Contact Us
           </Link>
           {isAuthenticated ? (
             <>
@@ -25,7 +64,12 @@ const Navbar = () => {
             </>
           ) : (
             <>
-              <Link to="/login" style={styles.link}>
+              <Link 
+                to="/login" 
+                style={getLinkStyle('login')}
+                onMouseEnter={() => setHoveredLink('login')}
+                onMouseLeave={() => setHoveredLink(null)}
+              >
                 Login
               </Link>
               <Link to="/register" style={styles.registerButton}>
@@ -61,7 +105,14 @@ const styles = {
     fontWeight: 'bold',
     display: 'flex',
     alignItems: 'center',
-    gap: '10px'
+    gap: '10px',
+    marginBottom: '5px'
+  },
+  logoContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '5px'
   },
   logoIcon: {
     fontSize: '28px'
@@ -76,7 +127,8 @@ const styles = {
     textDecoration: 'none',
     fontSize: '16px',
     fontWeight: '500',
-    transition: 'color 0.3s'
+    transition: 'all 0.3s',
+    cursor: 'pointer'
   },
   userName: {
     color: '#ccc',

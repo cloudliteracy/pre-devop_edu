@@ -69,8 +69,8 @@ const ModuleDetail = () => {
         phoneNumber
       });
 
-      if (paymentMethod === 'stripe' && data.url) {
-        // Redirect to Stripe checkout
+      if ((paymentMethod === 'stripe' || paymentMethod === 'paypal') && data.url) {
+        // Redirect to Stripe or PayPal checkout
         window.location.href = data.url;
       } else {
         alert('Payment initiated: ' + JSON.stringify(data));
