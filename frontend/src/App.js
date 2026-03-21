@@ -14,6 +14,7 @@ import PaymentCancel from './pages/PaymentCancel';
 import AboutUs from './pages/AboutUs';
 import ContactUs from './pages/ContactUs';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
               <Route path="/about" element={<AboutUs />} />
               <Route path="/contact" element={<ContactUs />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/admin" element={<AdminDashboard />} />
             </Routes>
           </div>
           <Footer />

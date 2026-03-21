@@ -2,6 +2,8 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { moduleAPI, paymentAPI } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
+import ProgressBar from '../components/ProgressBar';
+import axios from 'axios';
 
 const ModuleDetail = () => {
   const { id } = useParams();
@@ -14,6 +16,8 @@ const ModuleDetail = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [progress, setProgress] = useState(null);
+  const [totals, setTotals] = useState({ videos: 0, pdfs: 0, hasQuiz: false });
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -27,6 +31,7 @@ const ModuleDetail = () => {
         const { data } = await moduleAPI.getById(id);
         setModule(data);
         setHasAccess(true);
+        await fetchProgress();
       } catch (error) {
         // If 403, user hasn't purchased - fetch basic info from list
         if (error.response?.status === 403) {
@@ -47,6 +52,35 @@ const ModuleDetail = () => {
     };
     fetchModule();
   }, [id, isAuthenticated, navigate]);
+
+  const fetchProgress = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const { data } = await axios.get(`http://localhost:5000/api/progress/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setProgress(data.progress);
+      setTotals(data.totals);
+    } catch (error) {
+      console.error('Failed to fetch progress:', error);
+    }
+  };
+
+  const trackProgress = async (type, itemId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post('http://localhost:5000/api/progress/track', {
+        moduleId: id,
+        type,
+        itemId
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      await fetchProgress();
+    } catch (error) {
+      console.error('Failed to track progress:', error);
+    }
+  };
 
   const handlePayment = async () => {
     if (!paymentMethod) {
@@ -256,45 +290,61 @@ const ModuleDetail = () => {
 
         {/* Show Module Content if user has access */}
         {hasAccess && (
-          <div style={styles.contentCard}>
-            <div style={styles.accessBadge}>
-              ✓ You have access to this module
-            </div>
+          <>
+            {/* Progress Bar */}
+            {progress && <ProgressBar progress={progress} totals={totals} />}
 
-            {/* PDFs Section */}
-            {module.pdfs && module.pdfs.length > 0 && (
-              <div style={styles.section}>
-                <h3 style={styles.sectionTitle}>📄 PDF Resources</h3>
-                <div style={styles.resourceList}>
-                  {module.pdfs.map((pdf, index) => (
-                    <div key={index} style={styles.resourceItem}>
-                      <span style={styles.resourceName}>{pdf.title || `PDF ${index + 1}`}</span>
-                      <a href={`http://localhost:5000/${pdf.path}`} target="_blank" rel="noopener noreferrer" style={styles.downloadButton}>
-                        Download
-                      </a>
-                    </div>
-                  ))}
-                </div>
+            <div style={styles.contentCard}>
+              <div style={styles.accessBadge}>
+                ✓ You have access to this module
               </div>
-            )}
 
-            {/* Videos Section */}
-            {module.videos && module.videos.length > 0 && (
-              <div style={styles.section}>
-                <h3 style={styles.sectionTitle}>🎥 Video Lessons</h3>
-                <div style={styles.resourceList}>
-                  {module.videos.map((video, index) => (
-                    <div key={index} style={styles.resourceItem}>
-                      <span style={styles.resourceName}>{video.title || `Video ${index + 1}`}</span>
-                      <span style={styles.duration}>{video.duration || 'N/A'}</span>
-                      <a href={`http://localhost:5000/${video.path}`} target="_blank" rel="noopener noreferrer" style={styles.downloadButton}>
-                        Watch
-                      </a>
-                    </div>
-                  ))}
+              {/* PDFs Section */}
+              {module.pdfs && module.pdfs.length > 0 && (
+                <div style={styles.section}>
+                  <h3 style={styles.sectionTitle}>📄 PDF Resources</h3>
+                  <div style={styles.resourceList}>
+                    {module.pdfs.map((pdf, index) => (
+                      <div key={index} style={styles.resourceItem}>
+                        <span style={styles.resourceName}>{pdf.title || `PDF ${index + 1}`}</span>
+                        <a 
+                          href={`http://localhost:5000/${pdf.path}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          style={styles.downloadButton}
+                          onClick={() => trackProgress('pdf', pdf._id || `pdf-${index}`)}
+                        >
+                          Download
+                        </a>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+
+              {/* Videos Section */}
+              {module.videos && module.videos.length > 0 && (
+                <div style={styles.section}>
+                  <h3 style={styles.sectionTitle}>🎥 Video Lessons</h3>
+                  <div style={styles.resourceList}>
+                    {module.videos.map((video, index) => (
+                      <div key={index} style={styles.resourceItem}>
+                        <span style={styles.resourceName}>{video.title || `Video ${index + 1}`}</span>
+                        <span style={styles.duration}>{video.duration || 'N/A'}</span>
+                        <a 
+                          href={`http://localhost:5000/${video.path}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          style={styles.downloadButton}
+                          onClick={() => trackProgress('video', video._id || `video-${index}`)}
+                        >
+                          Watch
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
             {/* Quiz Section */}
             {module.quiz && module.quiz.questions && module.quiz.questions.length > 0 && (
@@ -320,6 +370,8 @@ const ModuleDetail = () => {
               </div>
             )}
           </div>
+        )}
+      </>
         )}
       </div>
     </div>

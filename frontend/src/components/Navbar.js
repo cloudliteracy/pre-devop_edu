@@ -57,6 +57,16 @@ const Navbar = () => {
           </Link>
           {isAuthenticated ? (
             <>
+              {user?.role === 'admin' && (
+                <Link 
+                  to="/admin" 
+                  style={getLinkStyle('admin')}
+                  onMouseEnter={() => setHoveredLink('admin')}
+                  onMouseLeave={() => setHoveredLink(null)}
+                >
+                  Admin
+                </Link>
+              )}
               <span style={styles.userName}>Hello, {user?.name}</span>
               <button onClick={logout} style={styles.logoutButton}>
                 Logout
