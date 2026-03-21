@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import socketService from '../services/socket';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -14,9 +15,19 @@ const AdminDashboard = () => {
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [passwordMessage, setPasswordMessage] = useState({ text: '', type: '' });
   const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
+  const [onlineUsers, setOnlineUsers] = useState([]);
 
   useEffect(() => {
     fetchDashboardData();
+
+    socketService.connect();
+    socketService.onOnlineUsersUpdate((users) => {
+      setOnlineUsers(users);
+    });
+
+    return () => {
+      socketService.offOnlineUsersUpdate();
+    };
   }, []);
 
   const fetchDashboardData = async () => {
@@ -142,6 +153,16 @@ const AdminDashboard = () => {
             }}
           >
             Settings
+          </button>
+          <button
+            onClick={() => setActiveTab('online')}
+            style={{
+              ...styles.tab,
+              backgroundColor: activeTab === 'online' ? '#FFD700' : '#1a1a1a',
+              color: activeTab === 'online' ? '#000' : '#FFD700'
+            }}
+          >
+            Online Users ({onlineUsers.length})
           </button>
         </div>
 
@@ -413,6 +434,76 @@ const AdminDashboard = () => {
                 </button>
               </form>
             </div>
+          </div>
+        )}
+
+        {/* Online Users Tab */}
+        {activeTab === 'online' && (
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>Online Users - Real-time</h2>
+            <p style={styles.onlineSubtitle}>
+              {onlineUsers.length} {onlineUsers.length === 1 ? 'learner is' : 'learners are'} currently active on the platform
+            </p>
+            
+            {onlineUsers.length > 0 ? (
+              <div style={styles.onlineUsersGrid}>
+                {onlineUsers.map((user, index) => (
+                  <div key={index} style={styles.onlineUserCard}>
+                    <div style={styles.onlineUserHeader}>
+                      <div style={styles.onlineUserInfo}>
+                        <div style={styles.onlineUserName}>
+                          {user.userName}
+                          <span style={styles.onlineStatus}>● Online</span>
+                        </div>
+                        <div style={styles.onlineUserEmail}>{user.userEmail}</div>
+                      </div>
+                    </div>
+                    
+                    <div style={styles.onlineUserActivity}>
+                      <div style={styles.activityLabel}>Current Activity:</div>
+                      <div style={styles.activityValue}>
+                        {user.currentModule ? (
+                          <>
+                            <span style={styles.activityIcon}>📚</span>
+                            <div style={styles.moduleActivityInfo}>
+                              <span>{user.currentModule.moduleTitle}</span>
+                              {user.currentModule.progress !== undefined && (
+                                <div style={styles.progressBarContainer}>
+                                  <div style={styles.progressBarBg}>
+                                    <div style={{
+                                      ...styles.progressBarFill,
+                                      width: `${user.currentModule.progress}%`,
+                                      backgroundColor: user.currentModule.progress < 30 ? '#ff4444' : 
+                                                      user.currentModule.progress < 70 ? '#FFD700' : '#4CAF50'
+                                    }}></div>
+                                  </div>
+                                  <span style={styles.progressText}>{user.currentModule.progress}%</span>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <span style={styles.activityIcon}>🏠</span>
+                            <span>Browsing platform</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div style={styles.onlineUserTime}>
+                      Connected: {new Date(user.connectedAt).toLocaleTimeString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={styles.noOnlineUsers}>
+                <div style={styles.noOnlineIcon}>😴</div>
+                <div style={styles.noOnlineText}>No users currently online</div>
+                <div style={styles.noOnlineSubtext}>Users will appear here when they log in and browse the platform</div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -778,6 +869,128 @@ const styles = {
     fontWeight: 'bold',
     cursor: 'pointer',
     transition: 'all 0.3s'
+  },
+  onlineSubtitle: {
+    color: '#999',
+    fontSize: '16px',
+    marginBottom: '25px'
+  },
+  onlineUsersGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+    gap: '20px'
+  },
+  onlineUserCard: {
+    backgroundColor: '#0d0d0d',
+    border: '2px solid #4CAF50',
+    borderRadius: '12px',
+    padding: '20px',
+    boxShadow: '0 4px 15px rgba(76, 175, 80, 0.2)'
+  },
+  onlineUserHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: '15px',
+    paddingBottom: '15px',
+    borderBottom: '1px solid #333'
+  },
+  onlineUserInfo: {
+    flex: 1
+  },
+  onlineUserName: {
+    color: '#FFD700',
+    fontSize: '18px',
+    fontWeight: 'bold',
+    marginBottom: '5px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px'
+  },
+  onlineStatus: {
+    color: '#4CAF50',
+    fontSize: '14px',
+    fontWeight: 'normal'
+  },
+  onlineUserEmail: {
+    color: '#999',
+    fontSize: '14px'
+  },
+  onlineUserActivity: {
+    backgroundColor: '#1a1a1a',
+    padding: '12px',
+    borderRadius: '8px',
+    marginBottom: '12px'
+  },
+  activityLabel: {
+    color: '#999',
+    fontSize: '12px',
+    marginBottom: '6px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px'
+  },
+  activityValue: {
+    color: '#FFD700',
+    fontSize: '15px',
+    fontWeight: '500',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  },
+  moduleActivityInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+    flex: 1
+  },
+  progressBarContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px'
+  },
+  progressBarBg: {
+    flex: 1,
+    height: '8px',
+    backgroundColor: '#333',
+    borderRadius: '4px',
+    overflow: 'hidden'
+  },
+  progressBarFill: {
+    height: '100%',
+    transition: 'width 0.3s ease',
+    borderRadius: '4px'
+  },
+  progressText: {
+    color: '#FFD700',
+    fontSize: '13px',
+    fontWeight: 'bold',
+    minWidth: '40px'
+  },
+  onlineUserTime: {
+    color: '#666',
+    fontSize: '13px',
+    textAlign: 'right'
+  },
+  noOnlineUsers: {
+    textAlign: 'center',
+    padding: '60px 20px',
+    backgroundColor: '#0d0d0d',
+    borderRadius: '12px',
+    border: '1px solid #333'
+  },
+  noOnlineIcon: {
+    fontSize: '64px',
+    marginBottom: '20px'
+  },
+  noOnlineText: {
+    color: '#FFD700',
+    fontSize: '20px',
+    fontWeight: 'bold',
+    marginBottom: '10px'
+  },
+  noOnlineSubtext: {
+    color: '#999',
+    fontSize: '14px'
   }
 };
 

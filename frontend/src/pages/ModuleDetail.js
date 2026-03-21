@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { moduleAPI, paymentAPI } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import ProgressBar from '../components/ProgressBar';
+import socketService from '../services/socket';
 import axios from 'axios';
 
 const ModuleDetail = () => {
@@ -32,6 +33,8 @@ const ModuleDetail = () => {
         setModule(data);
         setHasAccess(true);
         await fetchProgress();
+        // Update socket activity when viewing a module
+        socketService.updateActivity({ moduleId: id, moduleTitle: data.title });
       } catch (error) {
         // If 403, user hasn't purchased - fetch basic info from list
         if (error.response?.status === 403) {
@@ -51,6 +54,11 @@ const ModuleDetail = () => {
       }
     };
     fetchModule();
+
+    // Clear activity when leaving the page
+    return () => {
+      socketService.updateActivity({ moduleId: null, moduleTitle: null });
+    };
   }, [id, isAuthenticated, navigate]);
 
   const fetchProgress = async () => {
