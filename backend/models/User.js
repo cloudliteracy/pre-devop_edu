@@ -6,6 +6,9 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
+  isSuperAdmin: { type: Boolean, default: false },
+  isSuspended: { type: Boolean, default: false },
+  mustChangePassword: { type: Boolean, default: false },
   purchasedModules: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Module' }],
   quizScores: [{
     moduleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Module' },

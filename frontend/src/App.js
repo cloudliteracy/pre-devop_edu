@@ -15,10 +15,11 @@ import AboutUs from './pages/AboutUs';
 import ContactUs from './pages/ContactUs';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import AdminDashboard from './pages/AdminDashboard';
+import ForcePasswordChange from './pages/ForcePasswordChange';
 import socketService from './services/socket';
 
 function AppContent() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     if (user) {
@@ -27,14 +28,24 @@ function AppContent() {
         userName: user.name,
         userEmail: user.email
       });
+
+      // Listen for admin suspension
+      socketService.onAdminSuspended((data) => {
+        if (data.email === user.email) {
+          alert('Your account has been suspended by the administrator. You will be logged out.');
+          logout();
+          window.location.href = '/login';
+        }
+      });
     }
 
     return () => {
       if (user) {
+        socketService.offAdminSuspended();
         socketService.disconnect();
       }
     };
-  }, [user]);
+  }, [user, logout]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -53,6 +64,7 @@ function AppContent() {
           <Route path="/contact" element={<ContactUs />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/change-password-required" element={<ForcePasswordChange />} />
         </Routes>
       </div>
       <Footer />

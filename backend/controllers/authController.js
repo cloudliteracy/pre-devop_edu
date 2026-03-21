@@ -30,9 +30,23 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    if (user.isSuspended) {
+      return res.status(403).json({ message: 'Your account has been suspended. Please contact the administrator.' });
+    }
+
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+    res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        email: user.email, 
+        role: user.role,
+        isSuperAdmin: user.isSuperAdmin,
+        mustChangePassword: user.mustChangePassword
+      } 
+    });
   } catch (error) {
     res.status(500).json({ message: 'Login failed', error: error.message });
   }
@@ -41,7 +55,7 @@ exports.login = async (req, res) => {
 exports.changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user._id;
 
     const user = await User.findById(userId);
     if (!user) {
@@ -54,6 +68,7 @@ exports.changePassword = async (req, res) => {
     }
 
     user.password = newPassword;
+    user.mustChangePassword = false;
     await user.save();
 
     res.json({ message: 'Password changed successfully' });

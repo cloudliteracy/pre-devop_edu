@@ -45,6 +45,9 @@ const onlineUsers = new Map();
 const Progress = require('./models/Progress');
 const geoip = require('geoip-lite');
 
+// Make io accessible globally for admin suspension
+app.set('io', io);
+
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
@@ -69,6 +72,10 @@ io.on('connection', (socket) => {
         region: 'Unknown'
       }
     });
+    
+    // Store socket id by user email for suspension feature
+    socket.userEmail = userData.userEmail;
+    
     io.emit('online-users-update', Array.from(onlineUsers.values()));
   });
 
@@ -102,6 +109,9 @@ io.on('connection', (socket) => {
     console.log('User disconnected:', socket.id);
   });
 });
+
+// Export io for use in controllers
+module.exports.io = io;
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {

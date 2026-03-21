@@ -45,6 +45,18 @@ class SocketService {
       this.socket.off('online-users-update');
     }
   }
+
+  onAdminSuspended(callback) {
+    if (this.socket) {
+      this.socket.on('admin-suspended', callback);
+    }
+  }
+
+  offAdminSuspended() {
+    if (this.socket) {
+      this.socket.off('admin-suspended');
+    }
+  }
 }
 
 export default new SocketService();

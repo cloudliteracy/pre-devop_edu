@@ -185,3 +185,111 @@ exports.getRecentActivity = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch activity', error: error.message });
   }
 };
+
+exports.createAdmin = async (req, res) => {
+  try {
+    console.log('Create admin request:', req.body);
+    console.log('req.user:', req.user);
+    const { name, email } = req.body;
+    
+    if (!name || !email) {
+      return res.status(400).json({ message: 'Name and email are required' });
+    }
+    
+    const requestingUser = req.user;
+    console.log('Requesting user isSuperAdmin:', requestingUser?.isSuperAdmin);
+
+    if (!requestingUser.isSuperAdmin) {
+      return res.status(403).json({ message: 'Only super admin can create new admins' });
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
+    const tempPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10);
+    console.log('Creating admin with temp password');
+
+    const newAdmin = new User({
+      name,
+      email,
+      password: tempPassword,
+      role: 'admin',
+      isSuperAdmin: false,
+      mustChangePassword: true
+    });
+
+    await newAdmin.save();
+    console.log('Admin created successfully');
+
+    res.status(201).json({
+      message: 'Admin created successfully',
+      admin: {
+        id: newAdmin._id,
+        name: newAdmin.name,
+        email: newAdmin.email
+      },
+      temporaryPassword: tempPassword
+    });
+  } catch (error) {
+    console.error('Create admin error:', error);
+    res.status(500).json({ message: 'Failed to create admin', error: error.message });
+  }
+};
+
+exports.getAllAdmins = async (req, res) => {
+  try {
+    const admins = await User.find({ role: 'admin' })
+      .select('-password')
+      .sort({ createdAt: -1 });
+
+    res.json(admins);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch admins', error: error.message });
+  }
+};
+
+exports.toggleAdminSuspension = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const requestingUser = req.user;
+    const targetAdmin = await User.findById(id);
+
+    if (!targetAdmin || targetAdmin.role !== 'admin') {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    if (targetAdmin.isSuperAdmin) {
+      return res.status(403).json({ message: 'Cannot suspend super admin' });
+    }
+
+    if (requestingUser.role !== 'admin') {
+      return res.status(403).json({ message: 'Only admins can suspend/reinstate admins' });
+    }
+
+    targetAdmin.isSuspended = !targetAdmin.isSuspended;
+    await targetAdmin.save();
+
+    // If suspending, force logout the admin via socket
+    if (targetAdmin.isSuspended) {
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('admin-suspended', { email: targetAdmin.email });
+        console.log('Emitted admin-suspended event for:', targetAdmin.email);
+      }
+    }
+
+    res.json({
+      message: `Admin ${targetAdmin.isSuspended ? 'suspended' : 'reinstated'} successfully`,
+      admin: {
+        id: targetAdmin._id,
+        name: targetAdmin.name,
+        email: targetAdmin.email,
+        isSuspended: targetAdmin.isSuspended
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update admin status', error: error.message });
+  }
+};

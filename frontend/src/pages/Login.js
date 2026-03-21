@@ -38,7 +38,12 @@ const Login = () => {
     try {
       const { data } = await authAPI.login(formData);
       login(data.token, data.user);
-      navigate('/modules');
+      
+      if (data.user.mustChangePassword && data.user.role === 'admin') {
+        navigate('/admin/change-password-required');
+      } else {
+        navigate('/modules');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     }

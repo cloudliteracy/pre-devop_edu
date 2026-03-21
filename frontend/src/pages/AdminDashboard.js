@@ -16,6 +16,11 @@ const AdminDashboard = () => {
   const [passwordMessage, setPasswordMessage] = useState({ text: '', type: '' });
   const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const [admins, setAdmins] = useState([]);
+  const [showCreateAdminModal, setShowCreateAdminModal] = useState(false);
+  const [newAdminForm, setNewAdminForm] = useState({ name: '', email: '' });
+  const [tempPassword, setTempPassword] = useState('');
+  const [adminMessage, setAdminMessage] = useState({ text: '', type: '' });
 
   useEffect(() => {
     fetchDashboardData();
@@ -46,6 +51,12 @@ const AdminDashboard = () => {
       setUsers(usersRes.data.users);
       setAnalytics(analyticsRes.data);
       setActivity(activityRes.data);
+      
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (user?.isSuperAdmin) {
+        const adminsRes = await axios.get('http://localhost:5000/api/admin/admins', { headers });
+        setAdmins(adminsRes.data);
+      }
     } catch (error) {
       if (error.response?.status === 403) {
         alert('Admin access required');
@@ -96,6 +107,78 @@ const AdminDashboard = () => {
         type: 'error' 
       });
     }
+  };
+
+  const handleCreateAdmin = async (e) => {
+    e.preventDefault();
+    setAdminMessage({ text: '', type: '' });
+
+    if (!newAdminForm.name || !newAdminForm.email) {
+      setAdminMessage({ text: 'Please fill in all fields', type: 'error' });
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user'));
+      
+      console.log('Current user:', user);
+      console.log('Token:', token ? 'exists' : 'missing');
+      console.log('Sending request:', newAdminForm);
+      
+      const { data } = await axios.post('http://localhost:5000/api/admin/create-admin',
+        newAdminForm,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      console.log('Success response:', data);
+      
+      setTempPassword(data.temporaryPassword);
+      setAdminMessage({ text: 'Admin created successfully! Save the temporary password.', type: 'success' });
+      setNewAdminForm({ name: '', email: '' });
+      
+      const adminsRes = await axios.get('http://localhost:5000/api/admin/admins', { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      setAdmins(adminsRes.data);
+    } catch (error) {
+      console.error('Create admin error:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      setAdminMessage({ 
+        text: error.response?.data?.message || 'Failed to create admin', 
+        type: 'error' 
+      });
+    }
+  };
+
+  const handleToggleSuspension = async (adminId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const { data } = await axios.put(`http://localhost:5000/api/admin/admins/${adminId}/toggle-suspension`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setAdminMessage({ text: data.message, type: 'success' });
+      
+      const adminsRes = await axios.get('http://localhost:5000/api/admin/admins', { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      setAdmins(adminsRes.data);
+    } catch (error) {
+      setAdminMessage({ 
+        text: error.response?.data?.message || 'Failed to update admin status', 
+        type: 'error' 
+      });
+    }
+  };
+
+  const closeCreateAdminModal = () => {
+    setShowCreateAdminModal(false);
+    setNewAdminForm({ name: '', email: '' });
+    setTempPassword('');
+    setAdminMessage({ text: '', type: '' });
   };
 
   if (loading) {
@@ -164,6 +247,18 @@ const AdminDashboard = () => {
           >
             Online Users ({onlineUsers.length})
           </button>
+          {JSON.parse(localStorage.getItem('user'))?.isSuperAdmin && (
+            <button
+              onClick={() => setActiveTab('adminManagement')}
+              style={{
+                ...styles.tab,
+                backgroundColor: activeTab === 'adminManagement' ? '#FFD700' : '#1a1a1a',
+                color: activeTab === 'adminManagement' ? '#000' : '#FFD700'
+              }}
+            >
+              Admin Management
+            </button>
+          )}
         </div>
 
         {/* Overview Tab */}
@@ -512,6 +607,146 @@ const AdminDashboard = () => {
                 <div style={styles.noOnlineSubtext}>Users will appear here when they log in and browse the platform</div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Admin Management Tab */}
+        {activeTab === 'adminManagement' && JSON.parse(localStorage.getItem('user'))?.isSuperAdmin && (
+          <div style={styles.section}>
+            <div style={styles.adminManagementHeader}>
+              <h2 style={styles.sectionTitle}>Admin Management</h2>
+              <button onClick={() => setShowCreateAdminModal(true)} style={styles.createAdminButton}>
+                + Create New Admin
+              </button>
+            </div>
+
+            {adminMessage.text && (
+              <div style={{
+                ...styles.message,
+                backgroundColor: adminMessage.type === 'success' ? '#4CAF50' : '#ff4444',
+                marginBottom: '20px'
+              }}>
+                {adminMessage.text}
+              </div>
+            )}
+
+            <div style={styles.adminsGrid}>
+              {admins.map((admin) => (
+                <div key={admin._id} style={styles.adminCard}>
+                  <div style={styles.adminCardHeader}>
+                    <div>
+                      <div style={styles.adminName}>
+                        {admin.name}
+                        {admin.isSuperAdmin && <span style={styles.superAdminBadge}>SUPER ADMIN</span>}
+                        {admin.isSuspended && <span style={styles.suspendedBadge}>SUSPENDED</span>}
+                      </div>
+                      <div style={styles.adminEmail}>{admin.email}</div>
+                    </div>
+                  </div>
+                  
+                  <div style={styles.adminCardBody}>
+                    <div style={styles.adminInfo}>
+                      <span style={styles.adminInfoLabel}>Role:</span>
+                      <span style={styles.adminInfoValue}>{admin.role}</span>
+                    </div>
+                    <div style={styles.adminInfo}>
+                      <span style={styles.adminInfoLabel}>Created:</span>
+                      <span style={styles.adminInfoValue}>{new Date(admin.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <div style={styles.adminInfo}>
+                      <span style={styles.adminInfoLabel}>Status:</span>
+                      <span style={{
+                        ...styles.adminInfoValue,
+                        color: admin.isSuspended ? '#ff4444' : '#4CAF50'
+                      }}>
+                        {admin.isSuspended ? 'Suspended' : 'Active'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {!admin.isSuperAdmin && (
+                    <button
+                      onClick={() => handleToggleSuspension(admin._id)}
+                      style={{
+                        ...styles.suspendButton,
+                        backgroundColor: admin.isSuspended ? '#4CAF50' : '#ff4444'
+                      }}
+                    >
+                      {admin.isSuspended ? 'Reinstate' : 'Suspend'}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Create Admin Modal */}
+        {showCreateAdminModal && (
+          <div style={styles.modalOverlay} onClick={closeCreateAdminModal}>
+            <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <h2 style={styles.modalTitle}>Create New Admin</h2>
+              
+              {!tempPassword ? (
+                <form onSubmit={handleCreateAdmin} style={styles.modalForm}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Name</label>
+                    <input
+                      type="text"
+                      value={newAdminForm.name}
+                      onChange={(e) => setNewAdminForm({...newAdminForm, name: e.target.value})}
+                      style={styles.input}
+                      required
+                    />
+                  </div>
+
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Email</label>
+                    <input
+                      type="email"
+                      value={newAdminForm.email}
+                      onChange={(e) => setNewAdminForm({...newAdminForm, email: e.target.value})}
+                      style={styles.input}
+                      required
+                    />
+                  </div>
+
+                  {adminMessage.text && !tempPassword && (
+                    <div style={{
+                      ...styles.message,
+                      backgroundColor: adminMessage.type === 'success' ? '#4CAF50' : '#ff4444'
+                    }}>
+                      {adminMessage.text}
+                    </div>
+                  )}
+
+                  <div style={styles.modalButtons}>
+                    <button type="button" onClick={closeCreateAdminModal} style={styles.cancelButton}>
+                      Cancel
+                    </button>
+                    <button type="submit" style={styles.submitButton}>
+                      Create Admin
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div style={styles.passwordDisplay}>
+                  <p style={styles.passwordWarning}>
+                    ⚠️ Save this temporary password! It will only be shown once.
+                  </p>
+                  <div style={styles.passwordBox}>
+                    <span style={styles.passwordLabel}>Temporary Password:</span>
+                    <span style={styles.passwordValue}>{tempPassword}</span>
+                  </div>
+                  <p style={styles.passwordNote}>
+                    The new admin must change this password on first login.
+                  </p>
+                  <button onClick={closeCreateAdminModal} style={styles.submitButton}>
+                    Close
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -1013,6 +1248,188 @@ const styles = {
   noOnlineSubtext: {
     color: '#999',
     fontSize: '14px'
+  },
+  adminManagementHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '25px'
+  },
+  createAdminButton: {
+    padding: '12px 24px',
+    backgroundColor: '#FFD700',
+    color: '#000',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: 'all 0.3s'
+  },
+  adminsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+    gap: '20px'
+  },
+  adminCard: {
+    backgroundColor: '#0d0d0d',
+    border: '1px solid #333',
+    borderRadius: '12px',
+    padding: '20px'
+  },
+  adminCardHeader: {
+    marginBottom: '15px',
+    paddingBottom: '15px',
+    borderBottom: '1px solid #333'
+  },
+  adminName: {
+    color: '#FFD700',
+    fontSize: '18px',
+    fontWeight: 'bold',
+    marginBottom: '5px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    flexWrap: 'wrap'
+  },
+  superAdminBadge: {
+    backgroundColor: '#FFD700',
+    color: '#000',
+    padding: '4px 8px',
+    borderRadius: '4px',
+    fontSize: '11px',
+    fontWeight: 'bold'
+  },
+  suspendedBadge: {
+    backgroundColor: '#ff4444',
+    color: '#fff',
+    padding: '4px 8px',
+    borderRadius: '4px',
+    fontSize: '11px',
+    fontWeight: 'bold'
+  },
+  adminEmail: {
+    color: '#999',
+    fontSize: '14px'
+  },
+  adminCardBody: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    marginBottom: '15px'
+  },
+  adminInfo: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  adminInfoLabel: {
+    color: '#999',
+    fontSize: '14px'
+  },
+  adminInfoValue: {
+    color: '#FFD700',
+    fontSize: '14px',
+    fontWeight: '500'
+  },
+  suspendButton: {
+    width: '100%',
+    padding: '10px',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: 'all 0.3s'
+  },
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000
+  },
+  modalContent: {
+    backgroundColor: '#1a1a1a',
+    border: '2px solid #FFD700',
+    borderRadius: '15px',
+    padding: '30px',
+    maxWidth: '500px',
+    width: '90%',
+    maxHeight: '90vh',
+    overflow: 'auto'
+  },
+  modalTitle: {
+    color: '#FFD700',
+    fontSize: '24px',
+    marginBottom: '20px',
+    fontWeight: 'bold'
+  },
+  modalForm: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px'
+  },
+  modalButtons: {
+    display: 'flex',
+    gap: '10px',
+    marginTop: '10px'
+  },
+  cancelButton: {
+    flex: 1,
+    padding: '12px',
+    backgroundColor: '#333',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: 'all 0.3s'
+  },
+  passwordDisplay: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px'
+  },
+  passwordWarning: {
+    color: '#FFD700',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    textAlign: 'center'
+  },
+  passwordBox: {
+    backgroundColor: '#0d0d0d',
+    border: '2px solid #FFD700',
+    borderRadius: '8px',
+    padding: '20px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    alignItems: 'center'
+  },
+  passwordLabel: {
+    color: '#999',
+    fontSize: '14px'
+  },
+  passwordValue: {
+    color: '#FFD700',
+    fontSize: '20px',
+    fontWeight: 'bold',
+    letterSpacing: '2px',
+    userSelect: 'all'
+  },
+  passwordNote: {
+    color: '#999',
+    fontSize: '14px',
+    textAlign: 'center',
+    fontStyle: 'italic'
   }
 };
 

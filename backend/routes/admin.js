@@ -9,5 +9,8 @@ router.get('/users', auth, adminAuth, adminController.getAllUsers);
 router.get('/users/:id', auth, adminAuth, adminController.getUserDetails);
 router.get('/modules/analytics', auth, adminAuth, adminController.getModuleAnalytics);
 router.get('/activity', auth, adminAuth, adminController.getRecentActivity);
+router.post('/create-admin', auth, adminAuth, adminController.createAdmin);
+router.get('/admins', auth, adminAuth, adminController.getAllAdmins);
+router.put('/admins/:id/toggle-suspension', auth, adminAuth, adminController.toggleAdminSuspension);
 
 module.exports = router;
