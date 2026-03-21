@@ -43,17 +43,31 @@ app.get('/', (req, res) => {
 // Online users tracking
 const onlineUsers = new Map();
 const Progress = require('./models/Progress');
+const geoip = require('geoip-lite');
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   socket.on('user-online', (userData) => {
+    const clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
+    const ip = clientIp.split(',')[0].trim();
+    const geo = geoip.lookup(ip);
+    
     onlineUsers.set(socket.id, {
       userId: userData.userId,
       userName: userData.userName,
       userEmail: userData.userEmail,
       currentModule: userData.currentModule || null,
-      connectedAt: new Date()
+      connectedAt: new Date(),
+      location: geo ? {
+        country: geo.country,
+        city: geo.city || 'Unknown',
+        region: geo.region
+      } : {
+        country: 'Unknown',
+        city: 'Unknown',
+        region: 'Unknown'
+      }
     });
     io.emit('online-users-update', Array.from(onlineUsers.values()));
   });

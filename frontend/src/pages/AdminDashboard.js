@@ -456,6 +456,14 @@ const AdminDashboard = () => {
                           <span style={styles.onlineStatus}>● Online</span>
                         </div>
                         <div style={styles.onlineUserEmail}>{user.userEmail}</div>
+                        {user.location && (
+                          <div style={styles.locationInfo}>
+                            <span style={styles.locationIcon}>🌍</span>
+                            <span style={styles.locationText}>
+                              {user.location.country} {user.location.city !== 'Unknown' && `• ${user.location.city}`}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     
@@ -915,6 +923,20 @@ const styles = {
   onlineUserEmail: {
     color: '#999',
     fontSize: '14px'
+  },
+  locationInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    marginTop: '8px'
+  },
+  locationIcon: {
+    fontSize: '16px'
+  },
+  locationText: {
+    color: '#4CAF50',
+    fontSize: '13px',
+    fontWeight: '500'
   },
   onlineUserActivity: {
     backgroundColor: '#1a1a1a',
