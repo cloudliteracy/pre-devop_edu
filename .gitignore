@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables
+.env
+
+# Build files
+frontend/build/
+dist/
+
+# Uploads
+uploads/pdfs/*
+uploads/videos/*
+!uploads/pdfs/.gitkeep
+!uploads/videos/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
