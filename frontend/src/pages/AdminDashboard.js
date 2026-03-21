@@ -10,6 +10,7 @@ const AdminDashboard = () => {
   const [activity, setActivity] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [expandedUser, setExpandedUser] = useState(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -40,6 +41,16 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getProgressColor = (percentage) => {
+    if (percentage < 30) return '#ff4444';
+    if (percentage < 70) return '#FFD700';
+    return '#4CAF50';
+  };
+
+  const toggleUserDetails = (userId) => {
+    setExpandedUser(expandedUser === userId ? null : userId);
   };
 
   if (loading) {
@@ -166,17 +177,79 @@ const AdminDashboard = () => {
                 <div style={styles.tableCell}>Name</div>
                 <div style={styles.tableCell}>Email</div>
                 <div style={styles.tableCell}>Modules</div>
+                <div style={styles.tableCell}>Progress</div>
                 <div style={styles.tableCell}>Joined</div>
+                <div style={styles.tableCell}>Actions</div>
               </div>
               {users.map((user) => (
-                <div key={user._id} style={styles.tableRow}>
-                  <div style={styles.tableCell}>{user.name}</div>
-                  <div style={styles.tableCell}>{user.email}</div>
-                  <div style={styles.tableCell}>{user.purchasedModules.length}</div>
-                  <div style={styles.tableCell}>
-                    {new Date(user.createdAt).toLocaleDateString()}
+                <React.Fragment key={user._id}>
+                  <div style={styles.tableRow}>
+                    <div style={styles.tableCell}>{user.name}</div>
+                    <div style={styles.tableCell}>{user.email}</div>
+                    <div style={styles.tableCell}>{user.purchasedModules.length}</div>
+                    <div style={styles.tableCell}>
+                      <div style={{
+                        ...styles.progressBadge,
+                        backgroundColor: getProgressColor(user.overallProgress)
+                      }}>
+                        {user.overallProgress}%
+                      </div>
+                    </div>
+                    <div style={styles.tableCell}>
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </div>
+                    <div style={styles.tableCell}>
+                      <button 
+                        onClick={() => toggleUserDetails(user._id)}
+                        style={styles.detailsButton}
+                      >
+                        {expandedUser === user._id ? 'Hide' : 'Details'}
+                      </button>
+                    </div>
                   </div>
-                </div>
+                  
+                  {/* Expanded Details */}
+                  {expandedUser === user._id && (
+                    <div style={styles.expandedRow}>
+                      <h3 style={styles.expandedTitle}>Module Progress Details</h3>
+                      {user.moduleProgress && user.moduleProgress.length > 0 ? (
+                        <div style={styles.progressGrid}>
+                          {user.moduleProgress.map((progress, index) => (
+                            <div key={index} style={styles.progressCard}>
+                              <div style={styles.progressCardHeader}>
+                                <span style={styles.progressModuleTitle}>{progress.moduleTitle}</span>
+                                <span style={{
+                                  ...styles.progressPercentage,
+                                  color: getProgressColor(progress.completionPercentage)
+                                }}>
+                                  {progress.completionPercentage}%
+                                </span>
+                              </div>
+                              <div style={styles.progressDetails}>
+                                <div style={styles.progressDetailItem}>
+                                  <span style={styles.progressIcon}>🎥</span>
+                                  <span style={styles.progressDetailText}>Videos: {progress.videosWatched}</span>
+                                </div>
+                                <div style={styles.progressDetailItem}>
+                                  <span style={styles.progressIcon}>📄</span>
+                                  <span style={styles.progressDetailText}>PDFs: {progress.pdfsDownloaded}</span>
+                                </div>
+                                <div style={styles.progressDetailItem}>
+                                  <span style={styles.progressIcon}>✅</span>
+                                  <span style={styles.progressDetailText}>
+                                    Quiz: {progress.quizCompleted ? `${progress.quizScore}%` : 'Not Completed'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={styles.noProgress}>No progress data available</p>
+                      )}
+                    </div>
+                  )}
+                </React.Fragment>
               ))}
             </div>
           </div>
@@ -360,7 +433,7 @@ const styles = {
   },
   tableHeader: {
     display: 'grid',
-    gridTemplateColumns: '2fr 2fr 1fr 1fr',
+    gridTemplateColumns: '1.5fr 2fr 0.8fr 0.8fr 1fr 0.8fr',
     gap: '15px',
     padding: '15px',
     backgroundColor: '#0d0d0d',
@@ -370,13 +443,14 @@ const styles = {
   },
   tableRow: {
     display: 'grid',
-    gridTemplateColumns: '2fr 2fr 1fr 1fr',
+    gridTemplateColumns: '1.5fr 2fr 0.8fr 0.8fr 1fr 0.8fr',
     gap: '15px',
     padding: '15px',
     backgroundColor: '#0d0d0d',
     borderRadius: '10px',
     border: '1px solid #333',
-    color: '#ccc'
+    color: '#ccc',
+    alignItems: 'center'
   },
   tableCell: {
     overflow: 'hidden',
@@ -418,6 +492,91 @@ const styles = {
     color: '#FFD700',
     fontSize: '16px',
     fontWeight: 'bold'
+  },
+  progressBadge: {
+    padding: '6px 12px',
+    borderRadius: '6px',
+    color: '#000',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    display: 'inline-block'
+  },
+  detailsButton: {
+    padding: '8px 16px',
+    backgroundColor: '#FFD700',
+    color: '#000',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: 'all 0.3s'
+  },
+  expandedRow: {
+    gridColumn: '1 / -1',
+    backgroundColor: '#0d0d0d',
+    border: '1px solid #FFD700',
+    borderRadius: '10px',
+    padding: '20px',
+    marginTop: '10px',
+    marginBottom: '10px'
+  },
+  expandedTitle: {
+    color: '#FFD700',
+    fontSize: '18px',
+    marginBottom: '15px',
+    fontWeight: 'bold'
+  },
+  progressGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+    gap: '15px'
+  },
+  progressCard: {
+    backgroundColor: '#1a1a1a',
+    border: '1px solid #333',
+    borderRadius: '8px',
+    padding: '15px'
+  },
+  progressCardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '12px',
+    paddingBottom: '10px',
+    borderBottom: '1px solid #333'
+  },
+  progressModuleTitle: {
+    color: '#FFD700',
+    fontSize: '16px',
+    fontWeight: '500'
+  },
+  progressPercentage: {
+    fontSize: '20px',
+    fontWeight: 'bold'
+  },
+  progressDetails: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px'
+  },
+  progressDetailItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px'
+  },
+  progressIcon: {
+    fontSize: '18px'
+  },
+  progressDetailText: {
+    color: '#ccc',
+    fontSize: '14px'
+  },
+  noProgress: {
+    color: '#999',
+    fontSize: '16px',
+    textAlign: 'center',
+    padding: '20px'
   }
 };
 

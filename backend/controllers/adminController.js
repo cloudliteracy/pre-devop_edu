@@ -48,10 +48,35 @@ exports.getAllUsers = async (req, res) => {
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 });
 
+    // Calculate progress for each user
+    const usersWithProgress = await Promise.all(users.map(async (user) => {
+      const userProgress = await Progress.find({ userId: user._id }).populate('moduleId', 'title');
+      
+      let overallProgress = 0;
+      if (userProgress.length > 0) {
+        const totalCompletion = userProgress.reduce((sum, p) => sum + p.completionPercentage, 0);
+        overallProgress = Math.round(totalCompletion / userProgress.length);
+      }
+
+      return {
+        ...user.toObject(),
+        overallProgress,
+        moduleProgress: userProgress.map(p => ({
+          moduleId: p.moduleId?._id,
+          moduleTitle: p.moduleId?.title,
+          completionPercentage: p.completionPercentage,
+          videosWatched: p.videosWatched.length,
+          pdfsDownloaded: p.pdfsDownloaded.length,
+          quizCompleted: p.quizCompleted,
+          quizScore: p.quizScore
+        }))
+      };
+    }));
+
     const count = await User.countDocuments(query);
 
     res.json({
-      users,
+      users: usersWithProgress,
       totalPages: Math.ceil(count / limit),
       currentPage: page,
       totalUsers: count

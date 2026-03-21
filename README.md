@@ -4,12 +4,39 @@ A full-stack educational platform for pre-DevOps learning with payment integrati
 
 ## Features
 
-- 7 DevOps learning modules
+### Core Learning Features
+- 7 Pre-DevOps learning modules with structured content
 - PDF and video content per module
-- Interactive quizzes with scoring
+- Interactive quizzes with scoring and passing requirements
+- Progress tracking system (videos 40%, PDFs 30%, quizzes 30%)
+- Color-coded progress indicators (red <30%, yellow 30-70%, green >70%)
+
+### Payment & Access
 - Multi-payment gateway support (MTN MoMo, Orange Money, Stripe, PayPal)
-- User authentication and authorization
-- Module access control based on payment
+- Secure payment verification and module access control
+- Donation system with custom amounts and all payment gateways
+- USD currency for all transactions
+
+### User Experience
+- User authentication with JWT tokens
+- Role-based access control (user/admin)
+- Black (#000000, #1a1a1a) and gold (#FFD700) themed UI
+- Password visibility toggles and drag-drop captcha
+- Forgot password functionality
+- 5-star rating system with hover effects
+- Responsive navigation with animated hover effects
+
+### Admin Dashboard
+- Comprehensive overview with stats cards (users, enrollments, revenue, completion)
+- User management with search and pagination
+- Detailed user progress tracking with expandable module breakdowns
+- Module analytics and performance metrics
+- Recent activity feed (registrations, payments, quiz completions)
+
+### Additional Pages
+- About Us page with mission and vision
+- Contact Us page with form submission
+- Privacy Policy with comprehensive data protection information
 
 ## Tech Stack
 
@@ -129,12 +156,30 @@ Frontend runs on: http://localhost:3000
 - POST `/api/modules` - Create module (admin)
 
 ### Payments
-- POST `/api/payments/initiate` - Initiate payment
+- POST `/api/payments/initiate` - Initiate payment (supports donations with isDonation flag)
 - GET `/api/payments/verify/:id` - Verify payment status
+- POST `/api/payments/verify-stripe` - Verify Stripe payment
+- POST `/api/payments/verify-paypal` - Verify PayPal payment
 
 ### Quiz
 - GET `/api/quiz/:moduleId` - Get quiz (requires auth + payment)
 - POST `/api/quiz/:moduleId/submit` - Submit quiz answers
+
+### Progress Tracking
+- POST `/api/progress/track` - Track video/PDF progress (requires auth)
+- GET `/api/progress/:moduleId` - Get user progress for module (requires auth)
+- PUT `/api/progress/:moduleId/quiz` - Update quiz completion (requires auth)
+
+### Ratings
+- POST `/api/ratings` - Submit or update rating (requires auth)
+- GET `/api/ratings/stats` - Get average rating and total count
+
+### Admin (requires admin role)
+- GET `/api/admin/stats` - Dashboard statistics
+- GET `/api/admin/users` - Get all users with progress (paginated, searchable)
+- GET `/api/admin/users/:id` - Get user details
+- GET `/api/admin/modules/analytics` - Module performance analytics
+- GET `/api/admin/activity` - Recent activity feed
 
 ## Project Structure
 
@@ -142,35 +187,49 @@ Frontend runs on: http://localhost:3000
 cloudliteracy_edu/
 ├── backend/
 │   ├── config/          # Database configuration
-│   ├── models/          # Mongoose schemas
-│   ├── routes/          # API routes
+│   ├── models/          # Mongoose schemas (User, Module, Payment, Rating, Progress)
+│   ├── routes/          # API routes (auth, modules, payments, quiz, ratings, admin, progress)
 │   ├── controllers/     # Business logic
-│   ├── middleware/      # Auth & access control
-│   └── server.js        # Entry point
+│   ├── middleware/      # Auth & admin access control
+│   ├── server.js        # Entry point
+│   ├── seedModules.js   # Database seeding script
+│   └── createAdmin.js   # Admin user creation script
 ├── frontend/
 │   ├── public/
 │   └── src/
-│       ├── components/  # Reusable components
-│       ├── pages/       # Page components
-│       ├── services/    # API services
-│       ├── context/     # React context
-│       └── App.js       # Main app
+│       ├── components/  # Navbar, Footer, DonateModal, ProgressBar
+│       ├── pages/       # Home, Login, Register, ModuleList, ModuleDetail, AdminDashboard, etc.
+│       ├── services/    # API services (auth, modules, payments, ratings)
+│       ├── context/     # AuthContext for user state management
+│       └── App.js       # Main app with routing
 └── uploads/             # Content storage
     ├── pdfs/
     └── videos/
 ```
 
-## Next Steps
+## Getting Started
 
+### Quick Setup (5 minutes)
 1. ✅ Install dependencies (backend & frontend)
 2. ✅ Setup MongoDB Atlas free tier
 3. ✅ Configure Stripe for card payments (minimum requirement)
 4. ✅ Seed initial module data
-5. 📝 Upload your DevOps course content (PDFs, videos)
-6. 📝 Add quiz questions to modules
-7. 🔄 Setup MTN MoMo & Orange Money (optional, for mobile money)
-8. 🚀 Test payment flows
-9. 🚀 Deploy to production
+5. ✅ Create admin account: `node backend/createAdmin.js`
+6. ✅ Start backend: `npm run dev` (in backend folder)
+7. ✅ Start frontend: `npm start` (in frontend folder)
+
+### Admin Access
+- Email: `admin@cloudliteracy.com`
+- Password: `admin123`
+- Access admin dashboard at: http://localhost:3000/admin
+
+### Next Steps
+1. 📝 Upload your Pre-DevOps course content (PDFs, videos)
+2. 📝 Add quiz questions to modules
+3. 📝 Test complete user flow: Register → Browse → Pay → Learn → Track Progress
+4. 📝 Test admin dashboard features
+5. 🔄 Setup MTN MoMo & Orange Money (optional, for mobile money)
+6. 🚀 Deploy to production
 
 ## Payment Integration Status
 

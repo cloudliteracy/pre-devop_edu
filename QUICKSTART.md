@@ -200,7 +200,21 @@ cd backend
 node seedModules.js
 ```
 
-This creates 7 DevOps modules in your database.
+This creates 7 Pre-DevOps modules in your database.
+
+## Step 4b: Create Admin Account
+
+```bash
+cd backend
+node createAdmin.js
+```
+
+This creates an admin user with:
+- Email: `admin@cloudliteracy.com`
+- Password: `admin123`
+- Role: `admin`
+
+**Important:** Change the admin password after first login in production!
 
 ## Step 5: Start the Application
 
@@ -220,10 +234,54 @@ App opens at http://localhost:3000
 
 ## Step 6: Test the Application
 
+### User Flow:
 1. Open http://localhost:3000
 2. Click "Register" to create an account
-3. Browse modules
-4. Try payment flow (Stripe requires API keys)
+3. Browse Pre-DevOps Learning Modules
+4. Try payment flow with Stripe test cards:
+   - Card: `4242 4242 4242 4242`
+   - Expiry: Any future date (e.g., 12/25)
+   - CVC: Any 3 digits (e.g., 123)
+5. Access purchased module content
+6. Track your progress (videos, PDFs, quizzes)
+7. Rate the platform (5-star rating on home page)
+8. Try the Donate feature in footer
+
+### Admin Flow:
+1. Login with admin credentials:
+   - Email: `admin@cloudliteracy.com`
+   - Password: `admin123`
+2. Access Admin Dashboard at http://localhost:3000/admin
+3. View Overview tab (stats, recent activity)
+4. Check Users tab (search, view progress, expand details)
+5. Review Analytics tab (module performance)
+
+## Key Features Implemented
+
+### 🎯 User Features
+- **Progress Tracking**: Automatic tracking of videos watched (40%), PDFs downloaded (30%), and quiz completion (30%)
+- **Color-Coded Progress**: Red (<30%), Yellow (30-70%), Green (>70%)
+- **5-Star Rating System**: Rate the platform on home page (requires login)
+- **Donation System**: Support the platform with custom amounts via all payment gateways
+- **Black & Gold Theme**: Professional UI with #000000, #1a1a1a backgrounds and #FFD700 accents
+- **Enhanced Security**: Password visibility toggle, drag-drop captcha, forgot password
+- **Animated Navigation**: Hover effects with glow, color change, and upward movement
+
+### 🛡️ Admin Features
+- **Dashboard Overview**: Total users, enrollments, revenue, average completion percentage
+- **User Management**: Paginated list with search, view overall progress with color-coded badges
+- **Detailed Progress View**: Expandable rows showing per-module breakdown (videos, PDFs, quiz status)
+- **Module Analytics**: Performance metrics for each module
+- **Recent Activity**: Real-time feed of registrations, payments, and quiz completions
+- **Role-Based Access**: Admin link only visible to users with admin role
+
+### 💳 Payment Features
+- **Stripe Integration**: Visa/Mastercard payments with test mode
+- **PayPal Integration**: Sandbox mode ready
+- **MTN Mobile Money**: Framework ready (requires approval)
+- **Orange Money**: Framework ready (requires merchant account)
+- **Donation Support**: All payment gateways support donations with custom amounts
+- **Phone Number Input**: For mobile money payments (MTN, Orange)
 
 ## Payment Gateway Setup (Optional)
 
@@ -310,11 +368,14 @@ For now, you can test with **Stripe** which works immediately!
 ## Next Steps
 
 ### Immediate (Can do now):
-1. ✅ Upload your DevOps content (PDFs, videos) to `uploads/` folders
+1. ✅ Upload your Pre-DevOps content (PDFs, videos) to `uploads/` folders
 2. ✅ Add more quiz questions to each module
 3. ✅ Customize styling and branding
-4. ✅ Test complete user flow: Register → Browse → Pay → Access content
-5. ✅ Add more modules if needed
+4. ✅ Test complete user flow: Register → Browse → Pay → Access content → Track progress
+5. ✅ Test admin dashboard: View stats, manage users, check analytics
+6. ✅ Test donation feature with all payment gateways
+7. ✅ Test rating system (requires login)
+8. ✅ Add more modules if needed
 
 ### Short-term (This week):
 1. 📝 Apply for MTN MoMo developer account
@@ -324,13 +385,16 @@ For now, you can test with **Stripe** which works immediately!
 5. 📝 Add email notifications for successful payments
 
 ### Before Production:
-1. 🚀 Implement proper error handling and logging
-2. 🚀 Add admin dashboard for managing modules
-3. 🚀 Set up SSL certificate (HTTPS)
-4. 🚀 Configure production environment variables
-5. 🚀 Deploy to cloud hosting (Heroku, AWS, DigitalOcean, etc.)
-6. 🚀 Set up backup strategy for MongoDB
-7. 🚀 Implement rate limiting and security measures
+1. 🚀 Change admin password from default `admin123`
+2. 🚀 Implement proper error handling and logging
+3. 🚀 Set up proper file storage (AWS S3 or similar for production)
+4. 🚀 Add email notifications for successful payments
+5. 🚀 Set up SSL certificate (HTTPS)
+6. 🚀 Configure production environment variables
+7. 🚀 Deploy to cloud hosting (Heroku, AWS, DigitalOcean, etc.)
+8. 🚀 Set up backup strategy for MongoDB
+9. 🚀 Implement rate limiting and security measures
+10. 🚀 Test all payment gateways in production mode
 
 ## Support
 
