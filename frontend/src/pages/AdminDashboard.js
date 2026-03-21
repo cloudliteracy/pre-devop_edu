@@ -11,6 +11,9 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedUser, setExpandedUser] = useState(null);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [passwordMessage, setPasswordMessage] = useState({ text: '', type: '' });
+  const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
 
   useEffect(() => {
     fetchDashboardData();
@@ -51,6 +54,37 @@ const AdminDashboard = () => {
 
   const toggleUserDetails = (userId) => {
     setExpandedUser(expandedUser === userId ? null : userId);
+  };
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setPasswordMessage({ text: '', type: '' });
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordMessage({ text: 'New passwords do not match', type: 'error' });
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordMessage({ text: 'Password must be at least 6 characters', type: 'error' });
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put('http://localhost:5000/api/auth/change-password', 
+        { currentPassword: passwordForm.currentPassword, newPassword: passwordForm.newPassword },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setPasswordMessage({ text: 'Password changed successfully!', type: 'success' });
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      setPasswordMessage({ 
+        text: error.response?.data?.message || 'Failed to change password', 
+        type: 'error' 
+      });
+    }
   };
 
   if (loading) {
@@ -98,6 +132,16 @@ const AdminDashboard = () => {
             }}
           >
             Analytics
+          </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            style={{
+              ...styles.tab,
+              backgroundColor: activeTab === 'settings' ? '#FFD700' : '#1a1a1a',
+              color: activeTab === 'settings' ? '#000' : '#FFD700'
+            }}
+          >
+            Settings
           </button>
         </div>
 
@@ -283,6 +327,91 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>Account Settings</h2>
+            
+            <div style={styles.settingsCard}>
+              <h3 style={styles.settingsSubtitle}>Change Password</h3>
+              <form onSubmit={handlePasswordChange} style={styles.passwordForm}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Current Password</label>
+                  <div style={styles.passwordInputWrapper}>
+                    <input
+                      type={showPasswords.current ? 'text' : 'password'}
+                      value={passwordForm.currentPassword}
+                      onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                      style={styles.input}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords({...showPasswords, current: !showPasswords.current})}
+                      style={styles.eyeButton}
+                    >
+                      {showPasswords.current ? '👁️' : '👁️‍🗨️'}
+                    </button>
+                  </div>
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>New Password</label>
+                  <div style={styles.passwordInputWrapper}>
+                    <input
+                      type={showPasswords.new ? 'text' : 'password'}
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                      style={styles.input}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords({...showPasswords, new: !showPasswords.new})}
+                      style={styles.eyeButton}
+                    >
+                      {showPasswords.new ? '👁️' : '👁️‍🗨️'}
+                    </button>
+                  </div>
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Confirm New Password</label>
+                  <div style={styles.passwordInputWrapper}>
+                    <input
+                      type={showPasswords.confirm ? 'text' : 'password'}
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                      style={styles.input}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords({...showPasswords, confirm: !showPasswords.confirm})}
+                      style={styles.eyeButton}
+                    >
+                      {showPasswords.confirm ? '👁️' : '👁️‍🗨️'}
+                    </button>
+                  </div>
+                </div>
+
+                {passwordMessage.text && (
+                  <div style={{
+                    ...styles.message,
+                    backgroundColor: passwordMessage.type === 'success' ? '#4CAF50' : '#ff4444'
+                  }}>
+                    {passwordMessage.text}
+                  </div>
+                )}
+
+                <button type="submit" style={styles.submitButton}>
+                  Change Password
+                </button>
+              </form>
             </div>
           </div>
         )}
@@ -577,6 +706,78 @@ const styles = {
     fontSize: '16px',
     textAlign: 'center',
     padding: '20px'
+  },
+  settingsCard: {
+    backgroundColor: '#0d0d0d',
+    border: '1px solid #333',
+    borderRadius: '10px',
+    padding: '30px',
+    maxWidth: '600px'
+  },
+  settingsSubtitle: {
+    color: '#FFD700',
+    fontSize: '20px',
+    marginBottom: '20px',
+    fontWeight: 'bold'
+  },
+  passwordForm: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px'
+  },
+  formGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px'
+  },
+  label: {
+    color: '#FFD700',
+    fontSize: '14px',
+    fontWeight: '500'
+  },
+  passwordInputWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center'
+  },
+  input: {
+    width: '100%',
+    padding: '12px',
+    paddingRight: '45px',
+    backgroundColor: '#1a1a1a',
+    border: '1px solid #333',
+    borderRadius: '8px',
+    color: '#fff',
+    fontSize: '16px',
+    outline: 'none'
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: '10px',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '20px',
+    padding: '5px'
+  },
+  message: {
+    padding: '12px',
+    borderRadius: '8px',
+    color: '#fff',
+    fontSize: '14px',
+    textAlign: 'center',
+    fontWeight: '500'
+  },
+  submitButton: {
+    padding: '14px',
+    backgroundColor: '#FFD700',
+    color: '#000',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: 'all 0.3s'
   }
 };
 
