@@ -12,5 +12,6 @@ router.get('/activity', auth, adminAuth, adminController.getRecentActivity);
 router.post('/create-admin', auth, adminAuth, adminController.createAdmin);
 router.get('/admins', auth, adminAuth, adminController.getAllAdmins);
 router.put('/admins/:id/toggle-suspension', auth, adminAuth, adminController.toggleAdminSuspension);
+router.delete('/admins/:id', auth, adminAuth, adminController.deleteAdmin);
 
 module.exports = router;

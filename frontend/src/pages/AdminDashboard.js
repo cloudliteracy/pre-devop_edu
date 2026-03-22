@@ -174,6 +174,31 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDeleteAdmin = async (adminId, adminName) => {
+    if (!window.confirm(`Are you sure you want to permanently delete admin "${adminName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const { data } = await axios.delete(`http://localhost:5000/api/admin/admins/${adminId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setAdminMessage({ text: data.message, type: 'success' });
+      
+      const adminsRes = await axios.get('http://localhost:5000/api/admin/admins', { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      setAdmins(adminsRes.data);
+    } catch (error) {
+      setAdminMessage({ 
+        text: error.response?.data?.message || 'Failed to delete admin', 
+        type: 'error' 
+      });
+    }
+  };
+
   const closeCreateAdminModal = () => {
     setShowCreateAdminModal(false);
     setNewAdminForm({ name: '', email: '' });
@@ -665,15 +690,24 @@ const AdminDashboard = () => {
                   </div>
 
                   {!admin.isSuperAdmin && (
-                    <button
-                      onClick={() => handleToggleSuspension(admin._id)}
-                      style={{
-                        ...styles.suspendButton,
-                        backgroundColor: admin.isSuspended ? '#4CAF50' : '#ff4444'
-                      }}
-                    >
-                      {admin.isSuspended ? 'Reinstate' : 'Suspend'}
-                    </button>
+                    <div style={styles.adminActions}>
+                      <button
+                        onClick={() => handleToggleSuspension(admin._id)}
+                        style={{
+                          ...styles.suspendButton,
+                          backgroundColor: admin.isSuspended ? '#4CAF50' : '#ff4444',
+                          marginBottom: '10px'
+                        }}
+                      >
+                        {admin.isSuspended ? 'Reinstate' : 'Suspend'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAdmin(admin._id, admin.name)}
+                        style={styles.deleteButton}
+                      >
+                        Delete Admin
+                      </button>
+                    </div>
                   )}
                 </div>
               ))}
@@ -1335,6 +1369,23 @@ const styles = {
   suspendButton: {
     width: '100%',
     padding: '10px',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: 'all 0.3s'
+  },
+  adminActions: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px'
+  },
+  deleteButton: {
+    width: '100%',
+    padding: '10px',
+    backgroundColor: '#8B0000',
     color: '#fff',
     border: 'none',
     borderRadius: '6px',

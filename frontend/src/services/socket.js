@@ -57,6 +57,79 @@ class SocketService {
       this.socket.off('admin-suspended');
     }
   }
+
+  onNewComment(callback) {
+    if (this.socket) {
+      this.socket.on('new-comment', callback);
+    }
+  }
+
+  onNewReply(callback) {
+    if (this.socket) {
+      this.socket.on('new-reply', callback);
+    }
+  }
+
+  onCommentEdited(callback) {
+    if (this.socket) {
+      this.socket.on('comment-edited', callback);
+    }
+  }
+
+  onCommentDeleted(callback) {
+    if (this.socket) {
+      this.socket.on('comment-deleted', callback);
+    }
+  }
+
+  offCommentEvents() {
+    if (this.socket) {
+      this.socket.off('new-comment');
+      this.socket.off('new-reply');
+      this.socket.off('comment-edited');
+      this.socket.off('comment-deleted');
+      this.socket.off('comment-reaction');
+      this.socket.off('chat-status-changed');
+    }
+  }
+
+  onCommentReaction(callback) {
+    if (this.socket) {
+      this.socket.on('comment-reaction', callback);
+    }
+  }
+
+  onChatStatusChanged(callback) {
+    if (this.socket) {
+      this.socket.on('chat-status-changed', callback);
+    }
+  }
+
+  onNewPoll(callback) {
+    if (this.socket) {
+      this.socket.on('new-poll', callback);
+    }
+  }
+
+  onPollUpdated(callback) {
+    if (this.socket) {
+      this.socket.on('poll-updated', callback);
+    }
+  }
+
+  onPollDeleted(callback) {
+    if (this.socket) {
+      this.socket.on('poll-deleted', callback);
+    }
+  }
+
+  offPollEvents() {
+    if (this.socket) {
+      this.socket.off('new-poll');
+      this.socket.off('poll-updated');
+      this.socket.off('poll-deleted');
+    }
+  }
 }
 
 export default new SocketService();

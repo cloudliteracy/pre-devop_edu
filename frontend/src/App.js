@@ -17,6 +17,8 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import AdminDashboard from './pages/AdminDashboard';
 import ForcePasswordChange from './pages/ForcePasswordChange';
 import ResetPassword from './pages/ResetPassword';
+import Chat from './pages/Chat';
+import Polls from './pages/Polls';
 import socketService from './services/socket';
 
 function AppContent() {
@@ -61,6 +63,8 @@ function AppContent() {
           <Route path="/module/:id" element={<ModuleDetail />} />
           <Route path="/payment/success" element={<PaymentSuccess />} />
           <Route path="/payment/cancel" element={<PaymentCancel />} />
+          <Route path="/chat" element={<Chat />} />
+          <Route path="/polls" element={<Polls />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/contact" element={<ContactUs />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />

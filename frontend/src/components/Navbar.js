@@ -40,6 +40,22 @@ const Navbar = () => {
             Modules
           </Link>
           <Link 
+            to="/chat" 
+            style={getLinkStyle('chat')}
+            onMouseEnter={() => setHoveredLink('chat')}
+            onMouseLeave={() => setHoveredLink(null)}
+          >
+            Chat
+          </Link>
+          <Link 
+            to="/polls" 
+            style={getLinkStyle('polls')}
+            onMouseEnter={() => setHoveredLink('polls')}
+            onMouseLeave={() => setHoveredLink(null)}
+          >
+            Polls
+          </Link>
+          <Link 
             to="/about" 
             style={getLinkStyle('about')}
             onMouseEnter={() => setHoveredLink('about')}

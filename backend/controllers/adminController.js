@@ -293,3 +293,38 @@ exports.toggleAdminSuspension = async (req, res) => {
     res.status(500).json({ message: 'Failed to update admin status', error: error.message });
   }
 };
+
+exports.deleteAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const requestingUser = req.user;
+
+    if (!requestingUser.isSuperAdmin) {
+      return res.status(403).json({ message: 'Only super admin can delete admins' });
+    }
+
+    const targetAdmin = await User.findById(id);
+
+    if (!targetAdmin || targetAdmin.role !== 'admin') {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    if (targetAdmin.isSuperAdmin) {
+      return res.status(403).json({ message: 'Cannot delete super admin' });
+    }
+
+    // Force logout the admin via socket before deletion
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('admin-suspended', { email: targetAdmin.email });
+    }
+
+    await User.findByIdAndDelete(id);
+
+    res.json({
+      message: 'Admin deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to delete admin', error: error.message });
+  }
+};
