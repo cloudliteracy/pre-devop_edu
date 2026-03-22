@@ -19,7 +19,10 @@ const ForgotPassword = () => {
     try {
       const { data } = await axios.post('http://localhost:5000/api/auth/forgot-password', { email });
       setMessage(data.message);
-      setResetUrl(data.resetUrl);
+      
+      if (!data.emailSent && data.resetUrl) {
+        setResetUrl(data.resetUrl);
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to process request');
     } finally {

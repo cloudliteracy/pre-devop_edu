@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { sendPasswordResetEmail } = require('../services/emailService');
 
 exports.register = async (req, res) => {
   try {
@@ -89,16 +90,26 @@ exports.forgotPassword = async (req, res) => {
 
     const resetToken = crypto.randomBytes(32).toString('hex');
     user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    user.resetPasswordExpires = Date.now() + 3600000;
     await user.save();
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
-    res.json({ 
-      message: 'Password reset link generated successfully',
-      resetUrl,
-      expiresIn: '1 hour'
-    });
+    const emailResult = await sendPasswordResetEmail(email, resetUrl, user.name);
+
+    if (emailResult.success) {
+      res.json({ 
+        message: 'Password reset link has been sent to your email',
+        emailSent: true
+      });
+    } else {
+      res.json({ 
+        message: 'Email service unavailable. Here is your reset link',
+        resetUrl,
+        emailSent: false,
+        expiresIn: '1 hour'
+      });
+    }
   } catch (error) {
     res.status(500).json({ message: 'Failed to process request', error: error.message });
   }
