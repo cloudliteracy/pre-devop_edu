@@ -16,6 +16,7 @@ import ContactUs from './pages/ContactUs';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import AdminDashboard from './pages/AdminDashboard';
 import ForcePasswordChange from './pages/ForcePasswordChange';
+import ResetPassword from './pages/ResetPassword';
 import socketService from './services/socket';
 
 function AppContent() {
@@ -65,6 +66,7 @@ function AppContent() {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/change-password-required" element={<ForcePasswordChange />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
         </Routes>
       </div>
       <Footer />

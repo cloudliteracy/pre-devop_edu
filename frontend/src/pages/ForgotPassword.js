@@ -1,16 +1,35 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [resetUrl, setResetUrl] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Implement password reset API call
-    setMessage('Password reset link has been sent to your email (Feature coming soon)');
+    setLoading(true);
+    setMessage('');
     setError('');
+    setResetUrl('');
+
+    try {
+      const { data } = await axios.post('http://localhost:5000/api/auth/forgot-password', { email });
+      setMessage(data.message);
+      setResetUrl(data.resetUrl);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to process request');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(resetUrl);
+    alert('Reset link copied to clipboard!');
   };
 
   return (
@@ -18,10 +37,33 @@ const ForgotPassword = () => {
       <div style={styles.formCard}>
         <h2 style={styles.title}>Reset Password</h2>
         <p style={styles.description}>
-          Enter your email address and we'll send you a link to reset your password.
+          Enter your email address and we'll generate a password reset link for you.
         </p>
         
-        {message && <p style={styles.success}>{message}</p>}
+        {message && (
+          <div style={styles.success}>
+            <p>{message}</p>
+            {resetUrl && (
+              <div style={styles.resetLinkBox}>
+                <p style={styles.resetLinkLabel}>Your password reset link:</p>
+                <div style={styles.resetLinkContainer}>
+                  <input 
+                    type="text" 
+                    value={resetUrl} 
+                    readOnly 
+                    style={styles.resetLinkInput}
+                  />
+                  <button onClick={copyToClipboard} style={styles.copyButton}>
+                    📋 Copy
+                  </button>
+                </div>
+                <p style={styles.resetLinkNote}>
+                  ⚠️ This link expires in 1 hour. Copy it and paste in your browser.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
         {error && <p style={styles.error}>{error}</p>}
         
         <form onSubmit={handleSubmit}>
@@ -37,8 +79,8 @@ const ForgotPassword = () => {
             />
           </div>
 
-          <button type="submit" style={styles.submitButton}>
-            Send Reset Link
+          <button type="submit" style={styles.submitButton} disabled={loading}>
+            {loading ? 'Processing...' : 'Generate Reset Link'}
           </button>
         </form>
         
@@ -65,7 +107,7 @@ const styles = {
     borderRadius: '15px',
     boxShadow: '0 8px 32px rgba(255, 215, 0, 0.2)',
     border: '1px solid #FFD700',
-    maxWidth: '450px',
+    maxWidth: '550px',
     width: '100%'
   },
   title: {
@@ -85,11 +127,50 @@ const styles = {
   success: {
     color: '#4CAF50',
     backgroundColor: '#1a2d1a',
-    padding: '10px',
-    borderRadius: '5px',
+    padding: '15px',
+    borderRadius: '8px',
     marginBottom: '20px',
-    textAlign: 'center',
     fontSize: '14px'
+  },
+  resetLinkBox: {
+    marginTop: '15px'
+  },
+  resetLinkLabel: {
+    color: '#FFD700',
+    fontSize: '13px',
+    marginBottom: '8px',
+    fontWeight: 'bold'
+  },
+  resetLinkContainer: {
+    display: 'flex',
+    gap: '10px',
+    marginBottom: '10px'
+  },
+  resetLinkInput: {
+    flex: 1,
+    padding: '10px',
+    backgroundColor: '#0d0d0d',
+    border: '1px solid #FFD700',
+    borderRadius: '6px',
+    color: '#FFD700',
+    fontSize: '12px',
+    fontFamily: 'monospace'
+  },
+  copyButton: {
+    padding: '10px 15px',
+    backgroundColor: '#FFD700',
+    color: '#000',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap'
+  },
+  resetLinkNote: {
+    color: '#ff9800',
+    fontSize: '12px',
+    fontStyle: 'italic'
   },
   error: {
     color: '#ff4444',
