@@ -1,0 +1,262 @@
+.announcement-management {
+  padding: 20px;
+}
+
+.announcement-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.announcement-header h2 {
+  color: #FFD700;
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.create-announcement-btn {
+  background: #FFD700;
+  color: #000;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.create-announcement-btn:hover {
+  background: #FFC700;
+  transform: translateY(-2px);
+}
+
+.announcement-message {
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.announcement-message.success {
+  background: #4CAF50;
+  color: #fff;
+}
+
+.announcement-message.error {
+  background: #ff4444;
+  color: #fff;
+}
+
+.announcement-form {
+  background: #1a1a1a;
+  border: 2px solid #FFD700;
+  border-radius: 12px;
+  padding: 30px;
+  margin-bottom: 30px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  color: #FFD700;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 12px;
+  background: #0d0d0d;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 15px;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #FFD700;
+}
+
+.file-name {
+  color: #4CAF50;
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.submit-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #000;
+  border: none;
+  padding: 15px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: scale(1.02);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.announcements-list h3 {
+  color: #FFD700;
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+}
+
+.no-announcements {
+  text-align: center;
+  color: #999;
+  padding: 40px;
+  font-size: 1.1rem;
+}
+
+.announcement-item {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 15px;
+  transition: all 0.3s;
+}
+
+.announcement-item:hover {
+  border-color: #FFD700;
+}
+
+.announcement-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.announcement-item-header h4 {
+  color: #FFD700;
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.announcement-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.toggle-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.toggle-btn.active {
+  background: #4CAF50;
+  color: #fff;
+}
+
+.toggle-btn.inactive {
+  background: #ff9800;
+  color: #fff;
+}
+
+.delete-btn {
+  background: #ff4444;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.3s;
+}
+
+.delete-btn:hover {
+  background: #ff0000;
+}
+
+.announcement-content {
+  color: #fff;
+  line-height: 1.6;
+  margin-bottom: 15px;
+  white-space: pre-wrap;
+}
+
+.announcement-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  color: #999;
+  font-size: 14px;
+  padding-top: 15px;
+  border-top: 1px solid #333;
+}
+
+.no-permission {
+  background: #1a1a1a;
+  border: 2px solid #ff4444;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+}
+
+.no-permission h3 {
+  color: #ff4444;
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+}
+
+.no-permission p {
+  color: #999;
+  font-size: 1.1rem;
+  margin: 10px 0;
+}
+
+@media (max-width: 768px) {
+  .announcement-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+
+  .create-announcement-btn {
+    width: 100%;
+  }
+
+  .announcement-item-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .announcement-actions {
+    width: 100%;
+  }
+
+  .toggle-btn,
+  .delete-btn {
+    flex: 1;
+  }
+
+  .announcement-meta {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

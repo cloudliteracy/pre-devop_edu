@@ -42,6 +42,13 @@ const ModuleList = () => {
   };
 
   const isModuleLocked = (module) => {
+    // Admins can access all modules
+    const currentUser = JSON.parse(localStorage.getItem('user'));
+    if (currentUser?.role === 'admin' || currentUser?.isSuperAdmin) {
+      return false;
+    }
+
+    // First module is always unlocked for learners
     if (module.order === 1) return false;
     
     const previousModule = modules.find(m => m.order === module.order - 1);

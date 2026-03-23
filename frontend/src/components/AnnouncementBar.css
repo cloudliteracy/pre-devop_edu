@@ -1,0 +1,51 @@
+.announcement-bar {
+  background: linear-gradient(90deg, #000000 0%, #1a1a1a 100%);
+  border-bottom: 2px solid #FFD700;
+  padding: 15px 0;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.announcement-bar-inner {
+  max-width: 1200px;
+  width: 95%;
+  overflow: hidden;
+  position: relative;
+}
+
+.announcement-scroll {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  animation: scroll 60s linear infinite;
+  padding-left: 100%;
+}
+
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.announcement-icon {
+  font-size: 24px;
+  margin-right: 20px;
+}
+
+.announcement-text {
+  color: #FFD700;
+  font-size: 18px;
+  font-weight: 500;
+  padding-right: 100px;
+}
+
+.announcement-text strong {
+  color: #fff;
+  margin-right: 10px;
+}

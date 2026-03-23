@@ -15,7 +15,7 @@ exports.getPolls = async (req, res) => {
 
     const polls = await Poll.find(query)
       .populate('user', 'name role')
-      .populate('options.votes', 'name')
+      .populate('questions.responses.userId', 'name')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -30,22 +30,39 @@ exports.getPolls = async (req, res) => {
   }
 };
 
-// Create poll
+// Create survey/poll
 exports.createPoll = async (req, res) => {
   try {
-    const { question, options, duration } = req.body;
+    const { title, questions, duration } = req.body;
 
-    if (!question || !options || options.length < 2 || options.length > 10) {
-      return res.status(400).json({ message: 'Question and 2-10 options required' });
+    // Check if user is admin
+    if (req.user.role !== 'admin' && !req.user.isSuperAdmin) {
+      return res.status(403).json({ message: 'Only admins can create surveys' });
     }
 
-    if (question.length > 200) {
-      return res.status(400).json({ message: 'Question must be 200 characters or less' });
+    if (!title || !questions || questions.length < 1) {
+      return res.status(400).json({ message: 'Title and at least 1 question required' });
     }
 
-    const invalidOptions = options.filter(opt => !opt.trim() || opt.length > 100);
-    if (invalidOptions.length > 0) {
-      return res.status(400).json({ message: 'Each option must be 1-100 characters' });
+    if (title.length > 200) {
+      return res.status(400).json({ message: 'Title must be 200 characters or less' });
+    }
+
+    // Validate questions
+    for (const q of questions) {
+      if (!q.questionText || !q.questionType) {
+        return res.status(400).json({ message: 'Each question must have text and type' });
+      }
+      
+      if (q.questionText.length > 300) {
+        return res.status(400).json({ message: 'Question text must be 300 characters or less' });
+      }
+
+      if (q.questionType === 'single' || q.questionType === 'multiple') {
+        if (!q.options || q.options.length < 2 || q.options.length > 10) {
+          return res.status(400).json({ message: 'Choice questions need 2-10 options' });
+        }
+      }
     }
 
     const expiresAt = new Date();
@@ -68,8 +85,14 @@ exports.createPoll = async (req, res) => {
 
     const poll = new Poll({
       user: req.user._id,
-      question: question.trim(),
-      options: options.map(opt => ({ text: opt.trim(), votes: [] })),
+      title: title.trim(),
+      questions: questions.map(q => ({
+        questionText: q.questionText.trim(),
+        questionType: q.questionType,
+        isRequired: q.isRequired || false,
+        options: q.options ? q.options.map(opt => ({ text: opt.trim() })) : [],
+        responses: []
+      })),
       expiresAt
     });
 
@@ -85,38 +108,114 @@ exports.createPoll = async (req, res) => {
   }
 };
 
-// Vote on poll
-exports.votePoll = async (req, res) => {
+// Update survey/poll
+exports.updatePoll = async (req, res) => {
   try {
     const { id } = req.params;
-    const { optionIndex } = req.body;
+    const { title, questions } = req.body;
 
     const poll = await Poll.findById(id);
     if (!poll) {
-      return res.status(404).json({ message: 'Poll not found' });
+      return res.status(404).json({ message: 'Survey not found' });
+    }
+
+    const isOwner = poll.user.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin' || req.user.isSuperAdmin;
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: 'Not authorized to edit this survey' });
+    }
+
+    // Check if survey has responses
+    const hasResponses = poll.questions.some(q => q.responses.length > 0);
+    if (hasResponses) {
+      return res.status(400).json({ message: 'Cannot edit survey that has responses' });
+    }
+
+    if (!title || !questions || questions.length < 1) {
+      return res.status(400).json({ message: 'Title and at least 1 question required' });
+    }
+
+    if (title.length > 200) {
+      return res.status(400).json({ message: 'Title must be 200 characters or less' });
+    }
+
+    // Validate questions
+    for (const q of questions) {
+      if (!q.questionText || !q.questionType) {
+        return res.status(400).json({ message: 'Each question must have text and type' });
+      }
+      
+      if (q.questionText.length > 300) {
+        return res.status(400).json({ message: 'Question text must be 300 characters or less' });
+      }
+
+      if (q.questionType === 'single' || q.questionType === 'multiple') {
+        if (!q.options || q.options.length < 2 || q.options.length > 10) {
+          return res.status(400).json({ message: 'Choice questions need 2-10 options' });
+        }
+      }
+    }
+
+    poll.title = title.trim();
+    poll.questions = questions.map(q => ({
+      questionText: q.questionText.trim(),
+      questionType: q.questionType,
+      isRequired: q.isRequired || false,
+      options: q.options ? q.options.map(opt => ({ text: opt.trim() })) : [],
+      responses: []
+    }));
+
+    await poll.save();
+    await poll.populate('user', 'name role');
+
+    const io = req.app.get('io');
+    io.emit('poll-updated', poll);
+
+    res.json(poll);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Submit survey response
+exports.votePoll = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { responses } = req.body; // Array of { questionIndex, answer }
+
+    const poll = await Poll.findById(id);
+    if (!poll) {
+      return res.status(404).json({ message: 'Survey not found' });
     }
 
     if (new Date() > poll.expiresAt) {
-      return res.status(400).json({ message: 'Poll has expired' });
+      return res.status(400).json({ message: 'Survey has expired' });
     }
 
-    if (optionIndex < 0 || optionIndex >= poll.options.length) {
-      return res.status(400).json({ message: 'Invalid option' });
-    }
-
-    // Check if user already voted
-    const hasVoted = poll.options.some(opt => 
-      opt.votes.some(v => v.toString() === req.user._id.toString())
+    // Check if user already responded
+    const hasResponded = poll.questions.some(q => 
+      q.responses.some(r => r.userId.toString() === req.user._id.toString())
     );
 
-    if (hasVoted) {
-      return res.status(400).json({ message: 'You have already voted on this poll' });
+    if (hasResponded) {
+      return res.status(400).json({ message: 'You have already responded to this survey' });
     }
 
-    poll.options[optionIndex].votes.push(req.user._id);
+    // Add responses to each question
+    responses.forEach(({ questionIndex, answer }) => {
+      if (questionIndex >= 0 && questionIndex < poll.questions.length) {
+        poll.questions[questionIndex].responses.push({
+          userId: req.user._id,
+          answer,
+          timestamp: new Date()
+        });
+      }
+    });
+
     await poll.save();
     await poll.populate('user', 'name role');
-    await poll.populate('options.votes', 'name');
+    await poll.populate('questions.responses.userId', 'name');
 
     const io = req.app.get('io');
     io.emit('poll-updated', poll);
@@ -134,14 +233,14 @@ exports.deletePoll = async (req, res) => {
 
     const poll = await Poll.findById(id);
     if (!poll) {
-      return res.status(404).json({ message: 'Poll not found' });
+      return res.status(404).json({ message: 'Survey not found' });
     }
 
     const isOwner = poll.user.toString() === req.user._id.toString();
-    const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
+    const isAdmin = req.user.role === 'admin' || req.user.isSuperAdmin;
 
     if (!isOwner && !isAdmin) {
-      return res.status(403).json({ message: 'Not authorized to delete this poll' });
+      return res.status(403).json({ message: 'Not authorized to delete this survey' });
     }
 
     await Poll.findByIdAndDelete(id);
@@ -149,7 +248,7 @@ exports.deletePoll = async (req, res) => {
     const io = req.app.get('io');
     io.emit('poll-deleted', { pollId: id });
 
-    res.json({ message: 'Poll deleted successfully' });
+    res.json({ message: 'Survey deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

@@ -17,5 +17,7 @@ router.put('/admins/:id/toggle-upload-access', auth, adminAuth, adminController.
 router.get('/quiz-analytics', auth, adminAuth, adminController.getQuizAnalytics);
 router.get('/quiz-analytics/export', auth, adminAuth, adminController.exportQuizData);
 router.put('/admins/:id/toggle-analytics-access', auth, adminAuth, adminController.toggleQuizAnalyticsAccess);
+router.put('/admins/:id/toggle-survey-analytics-access', auth, adminAuth, adminController.toggleSurveyAnalyticsAccess);
+router.get('/survey-analytics', auth, adminAuth, adminController.getSurveyAnalytics);
 
 module.exports = router;

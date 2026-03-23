@@ -10,7 +10,7 @@ import axios from 'axios';
 const ModuleDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
   const [module, setModule] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
@@ -20,6 +20,7 @@ const ModuleDetail = () => {
   const [error, setError] = useState('');
   const [progress, setProgress] = useState(null);
   const [totals, setTotals] = useState({ videos: 0, pdfs: 0, hasQuiz: false });
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -27,9 +28,14 @@ const ModuleDetail = () => {
       return;
     }
 
+    // Check if user is admin or super admin
+    const currentUser = JSON.parse(localStorage.getItem('user'));
+    const adminAccess = currentUser?.role === 'admin' || currentUser?.isSuperAdmin;
+    setIsAdmin(adminAccess);
+
     const fetchModule = async () => {
       try {
-        // Try to fetch module details (will succeed if purchased)
+        // Try to fetch module details (will succeed if purchased or admin)
         const { data } = await moduleAPI.getById(id);
         setModule(data);
         setHasAccess(true);
@@ -300,6 +306,13 @@ const ModuleDetail = () => {
         {/* Show Module Content if user has access */}
         {hasAccess && (
           <>
+            {/* Admin Access Badge */}
+            {isAdmin && (
+              <div style={styles.adminAccessBadge}>
+                🔓 Admin Access - No payment required
+              </div>
+            )}
+
             {/* Progress Bar */}
             {progress && <ProgressBar progress={progress} totals={totals} />}
 
@@ -700,6 +713,18 @@ const styles = {
   emptyText: {
     color: '#999',
     fontSize: '18px'
+  },
+  adminAccessBadge: {
+    backgroundColor: '#2d4016',
+    color: '#FFD700',
+    padding: '15px 20px',
+    borderRadius: '10px',
+    textAlign: 'center',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    marginBottom: '20px',
+    border: '2px solid #FFD700',
+    boxShadow: '0 4px 15px rgba(255, 215, 0, 0.2)'
   }
 };
 

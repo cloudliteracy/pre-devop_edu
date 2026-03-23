@@ -4,7 +4,10 @@ import axios from 'axios';
 import socketService from '../services/socket';
 import ContentManagement from '../components/ContentManagement';
 import QuizAnalytics from '../components/QuizAnalytics';
+import SurveyAnalytics from '../components/SurveyAnalytics';
+import AnnouncementBar from '../components/AnnouncementBar';
 import * as contentService from '../services/content';
+import * as adminService from '../services/admin';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -25,6 +28,7 @@ const AdminDashboard = () => {
   const [tempPassword, setTempPassword] = useState('');
   const [adminMessage, setAdminMessage] = useState({ text: '', type: '' });
   const [currentUser, setCurrentUser] = useState(null);
+  const [surveys, setSurveys] = useState([]);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -40,6 +44,12 @@ const AdminDashboard = () => {
       socketService.offOnlineUsersUpdate();
     };
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'surveyAnalytics' && (currentUser?.isSuperAdmin || currentUser?.canViewSurveyAnalytics)) {
+      fetchSurveyAnalytics();
+    }
+  }, [activeTab, currentUser]);
 
   const fetchDashboardData = async () => {
     try {
@@ -253,6 +263,54 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleToggleSurveyAnalyticsAccess = async (adminId) => {
+    try {
+      const { data } = await adminService.toggleSurveyAnalyticsAccess(adminId);
+      setAdminMessage({ text: data.message, type: 'success' });
+      
+      const token = localStorage.getItem('token');
+      const adminsRes = await axios.get('http://localhost:5000/api/admin/admins', { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      setAdmins(adminsRes.data);
+    } catch (error) {
+      setAdminMessage({ 
+        text: error.response?.data?.message || 'Failed to update survey analytics access', 
+        type: 'error' 
+      });
+    }
+  };
+
+  const fetchSurveyAnalytics = async () => {
+    try {
+      const data = await adminService.getSurveyAnalytics();
+      setSurveys(data);
+    } catch (error) {
+      console.error('Failed to fetch survey analytics:', error);
+    }
+  };
+
+  const handleToggleAnnouncementAccess = async (adminId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const { data } = await axios.put(`http://localhost:5000/api/announcements/admin/${adminId}/toggle-access`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setAdminMessage({ text: data.message, type: 'success' });
+      
+      const adminsRes = await axios.get('http://localhost:5000/api/admin/admins', { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      setAdmins(adminsRes.data);
+    } catch (error) {
+      setAdminMessage({ 
+        text: error.response?.data?.message || 'Failed to update announcement access', 
+        type: 'error' 
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div style={styles.loadingContainer}>
@@ -264,6 +322,7 @@ const AdminDashboard = () => {
 
   return (
     <div style={styles.container}>
+      <AnnouncementBar />
       <div style={styles.content}>
         <h1 style={styles.title}>Admin Dashboard</h1>
 
@@ -355,6 +414,18 @@ const AdminDashboard = () => {
               Quiz Analytics
             </button>
           )}
+          {(currentUser?.isSuperAdmin || currentUser?.canViewSurveyAnalytics) && (
+            <button
+              onClick={() => setActiveTab('surveyAnalytics')}
+              style={{
+                ...styles.tab,
+                backgroundColor: activeTab === 'surveyAnalytics' ? '#FFD700' : '#1a1a1a',
+                color: activeTab === 'surveyAnalytics' ? '#000' : '#FFD700'
+              }}
+            >
+              Survey Analytics
+            </button>
+          )}
         </div>
 
         {/* Overview Tab */}
@@ -380,6 +451,33 @@ const AdminDashboard = () => {
                 <div style={styles.statIcon}>📊</div>
                 <div style={styles.statValue}>{stats.avgCompletion}%</div>
                 <div style={styles.statLabel}>Avg Completion</div>
+              </div>
+              <div style={{...styles.statCard, gridColumn: 'span 2'}}>
+                <div style={styles.statIcon}>🌐</div>
+                <div style={styles.statValue}>{stats.visitors?.total || 0}</div>
+                <div style={styles.statLabel}>Total Visitors</div>
+                <div style={styles.visitorBreakdown}>
+                  <div style={styles.visitorStat}>
+                    <span style={styles.visitorLabel}>Today:</span>
+                    <span style={styles.visitorValue}>{stats.visitors?.today || 0}</span>
+                  </div>
+                  <div style={styles.visitorStat}>
+                    <span style={styles.visitorLabel}>Super Admins:</span>
+                    <span style={styles.visitorValue}>{stats.visitors?.breakdown?.super_admin || 0}</span>
+                  </div>
+                  <div style={styles.visitorStat}>
+                    <span style={styles.visitorLabel}>Admins:</span>
+                    <span style={styles.visitorValue}>{stats.visitors?.breakdown?.admin || 0}</span>
+                  </div>
+                  <div style={styles.visitorStat}>
+                    <span style={styles.visitorLabel}>Learners:</span>
+                    <span style={styles.visitorValue}>{stats.visitors?.breakdown?.learner || 0}</span>
+                  </div>
+                  <div style={styles.visitorStat}>
+                    <span style={styles.visitorLabel}>Guests:</span>
+                    <span style={styles.visitorValue}>{stats.visitors?.breakdown?.guest || 0}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -792,7 +890,27 @@ const AdminDashboard = () => {
                               marginBottom: '10px'
                             }}
                           >
-                            {admin.canViewQuizAnalytics ? '🚫 Revoke Analytics Access' : '✅ Grant Analytics Access'}
+                            {admin.canViewQuizAnalytics ? '🚫 Revoke Quiz Analytics' : '✅ Grant Quiz Analytics'}
+                          </button>
+                          <button
+                            onClick={() => handleToggleSurveyAnalyticsAccess(admin._id)}
+                            style={{
+                              ...styles.suspendButton,
+                              backgroundColor: admin.canViewSurveyAnalytics ? '#ff9800' : '#4CAF50',
+                              marginBottom: '10px'
+                            }}
+                          >
+                            {admin.canViewSurveyAnalytics ? '🚫 Revoke Survey Analytics' : '✅ Grant Survey Analytics'}
+                          </button>
+                          <button
+                            onClick={() => handleToggleAnnouncementAccess(admin._id)}
+                            style={{
+                              ...styles.suspendButton,
+                              backgroundColor: admin.canManageAnnouncements ? '#ff9800' : '#4CAF50',
+                              marginBottom: '10px'
+                            }}
+                          >
+                            {admin.canManageAnnouncements ? '🚫 Revoke Announcements' : '✅ Grant Announcements'}
                           </button>
                         </>
                       )}
@@ -818,6 +936,11 @@ const AdminDashboard = () => {
         {/* Quiz Analytics Tab */}
         {activeTab === 'quizAnalytics' && (
           <QuizAnalytics />
+        )}
+
+        {/* Survey Analytics Tab */}
+        {activeTab === 'surveyAnalytics' && (
+          <SurveyAnalytics surveys={surveys} />
         )}
 
         {/* Create Admin Modal */}
@@ -933,10 +1056,11 @@ const styles = {
   tabs: {
     display: 'flex',
     gap: '10px',
-    marginBottom: '30px'
+    marginBottom: '30px',
+    flexWrap: 'wrap'
   },
   tab: {
-    padding: '12px 30px',
+    padding: '12px 24px',
     border: '1px solid #FFD700',
     borderRadius: '8px',
     fontSize: '16px',
@@ -971,6 +1095,29 @@ const styles = {
   statLabel: {
     color: '#999',
     fontSize: '16px'
+  },
+  visitorBreakdown: {
+    marginTop: '20px',
+    paddingTop: '20px',
+    borderTop: '1px solid #333',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+    gap: '15px'
+  },
+  visitorStat: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '5px',
+    textAlign: 'center'
+  },
+  visitorLabel: {
+    color: '#999',
+    fontSize: '13px'
+  },
+  visitorValue: {
+    color: '#FFD700',
+    fontSize: '20px',
+    fontWeight: 'bold'
   },
   section: {
     backgroundColor: '#1a1a1a',

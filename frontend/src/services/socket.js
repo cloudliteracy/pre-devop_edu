@@ -130,6 +130,32 @@ class SocketService {
       this.socket.off('poll-deleted');
     }
   }
+
+  onNewAnnouncement(callback) {
+    if (this.socket) {
+      this.socket.on('new-announcement', callback);
+    }
+  }
+
+  onAnnouncementUpdated(callback) {
+    if (this.socket) {
+      this.socket.on('announcement-updated', callback);
+    }
+  }
+
+  onAnnouncementDeleted(callback) {
+    if (this.socket) {
+      this.socket.on('announcement-deleted', callback);
+    }
+  }
+
+  offAnnouncementEvents() {
+    if (this.socket) {
+      this.socket.off('new-announcement');
+      this.socket.off('announcement-updated');
+      this.socket.off('announcement-deleted');
+    }
+  }
 }
 
 export default new SocketService();

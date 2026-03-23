@@ -5,6 +5,8 @@ const Progress = require('../models/Progress');
 
 exports.getDashboardStats = async (req, res) => {
   try {
+    const Visitor = require('../models/Visitor');
+    
     const totalUsers = await User.countDocuments({ role: 'user' });
     const totalModules = await Module.countDocuments();
     
@@ -17,12 +19,43 @@ exports.getDashboardStats = async (req, res) => {
       ? (allProgress.reduce((sum, p) => sum + p.completionPercentage, 0) / allProgress.length).toFixed(1)
       : 0;
 
+    // Visitor statistics
+    const totalVisitors = await Visitor.countDocuments();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayVisitors = await Visitor.countDocuments({ visitedAt: { $gte: today } });
+    
+    const visitorsByType = await Visitor.aggregate([
+      {
+        $group: {
+          _id: '$userType',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const visitorBreakdown = {
+      guest: 0,
+      learner: 0,
+      admin: 0,
+      super_admin: 0
+    };
+
+    visitorsByType.forEach(item => {
+      visitorBreakdown[item._id] = item.count;
+    });
+
     res.json({
       totalUsers,
       totalModules,
       totalRevenue: totalRevenue.toFixed(2),
       totalEnrollments,
-      avgCompletion: parseFloat(avgCompletion)
+      avgCompletion: parseFloat(avgCompletion),
+      visitors: {
+        total: totalVisitors,
+        today: todayVisitors,
+        breakdown: visitorBreakdown
+      }
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch stats', error: error.message });
@@ -495,5 +528,58 @@ exports.toggleQuizAnalyticsAccess = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to update quiz analytics access', error: error.message });
+  }
+};
+
+exports.toggleSurveyAnalyticsAccess = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const requestingUser = req.user;
+
+    if (!requestingUser.isSuperAdmin) {
+      return res.status(403).json({ message: 'Only super admin can manage survey analytics access' });
+    }
+
+    const targetAdmin = await User.findById(id);
+
+    if (!targetAdmin || targetAdmin.role !== 'admin') {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    targetAdmin.canViewSurveyAnalytics = !targetAdmin.canViewSurveyAnalytics;
+    await targetAdmin.save();
+
+    res.json({
+      message: `Survey analytics access ${targetAdmin.canViewSurveyAnalytics ? 'granted' : 'revoked'} successfully`,
+      admin: {
+        id: targetAdmin._id,
+        name: targetAdmin.name,
+        email: targetAdmin.email,
+        canViewSurveyAnalytics: targetAdmin.canViewSurveyAnalytics
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update survey analytics access', error: error.message });
+  }
+};
+
+exports.getSurveyAnalytics = async (req, res) => {
+  try {
+    const Poll = require('../models/Poll');
+    
+    const polls = await Poll.find()
+      .populate('user', 'name role')
+      .populate('questions.responses.userId', 'name email')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const now = new Date();
+    polls.forEach(poll => {
+      poll.isActive = new Date(poll.expiresAt) > now;
+    });
+
+    res.json(polls);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch survey analytics', error: error.message });
   }
 };

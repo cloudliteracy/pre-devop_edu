@@ -19,6 +19,7 @@ import ForcePasswordChange from './pages/ForcePasswordChange';
 import ResetPassword from './pages/ResetPassword';
 import Chat from './pages/Chat';
 import Polls from './pages/Polls';
+import Announcements from './pages/Announcements';
 import socketService from './services/socket';
 
 function AppContent() {
@@ -65,6 +66,7 @@ function AppContent() {
           <Route path="/payment/cancel" element={<PaymentCancel />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/polls" element={<Polls />} />
+          <Route path="/announcements-management" element={<Announcements />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/contact" element={<ContactUs />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />

@@ -55,6 +55,16 @@ const Navbar = () => {
           >
             Polls
           </Link>
+          {user && (user.role === 'admin' || user.isSuperAdmin) && (user.isSuperAdmin || user.canManageAnnouncements) && (
+            <Link 
+              to="/announcements-management" 
+              style={getLinkStyle('announcements')}
+              onMouseEnter={() => setHoveredLink('announcements')}
+              onMouseLeave={() => setHoveredLink(null)}
+            >
+              Announcements
+            </Link>
+          )}
           <Link 
             to="/about" 
             style={getLinkStyle('about')}

@@ -6,20 +6,42 @@ const pollSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  question: {
+  title: {
     type: String,
     required: true,
     maxlength: 200
   },
-  options: [{
-    text: {
+  questions: [{
+    questionText: {
       type: String,
       required: true,
-      maxlength: 100
+      maxlength: 300
     },
-    votes: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
+    questionType: {
+      type: String,
+      enum: ['single', 'multiple', 'open'],
+      required: true
+    },
+    isRequired: {
+      type: Boolean,
+      default: false
+    },
+    options: [{
+      text: {
+        type: String,
+        maxlength: 150
+      }
+    }],
+    responses: [{
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      answer: mongoose.Schema.Types.Mixed, // Array of numbers for multiple, number for single, string for open
+      timestamp: {
+        type: Date,
+        default: Date.now
+      }
     }]
   }],
   expiresAt: {

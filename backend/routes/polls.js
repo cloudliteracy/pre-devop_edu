@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 
 router.get('/', pollController.getPolls);
 router.post('/', auth, pollController.createPoll);
+router.put('/:id', auth, pollController.updatePoll);
 router.post('/:id/vote', auth, pollController.votePoll);
 router.delete('/:id', auth, pollController.deletePoll);
 

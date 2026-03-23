@@ -13,15 +13,22 @@ export const getPolls = async (status = '') => {
   return response.data;
 };
 
-export const createPoll = async (question, options, duration) => {
-  const response = await axios.post(API_URL, { question, options, duration }, {
+export const createPoll = async (title, questions, duration) => {
+  const response = await axios.post(API_URL, { title, questions, duration }, {
     headers: getAuthHeader()
   });
   return response.data;
 };
 
-export const votePoll = async (pollId, optionIndex) => {
-  const response = await axios.post(`${API_URL}/${pollId}/vote`, { optionIndex }, {
+export const updatePoll = async (pollId, title, questions) => {
+  const response = await axios.put(`${API_URL}/${pollId}`, { title, questions }, {
+    headers: getAuthHeader()
+  });
+  return response.data;
+};
+
+export const votePoll = async (pollId, responses) => {
+  const response = await axios.post(`${API_URL}/${pollId}/vote`, { responses }, {
     headers: getAuthHeader()
   });
   return response.data;

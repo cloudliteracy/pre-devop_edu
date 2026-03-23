@@ -4,6 +4,8 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const connectDB = require('./config/database');
+const { optionalAuth } = require('./middleware/auth');
+const trackVisitor = require('./middleware/trackVisitor');
 
 const authRoutes = require('./routes/auth');
 const moduleRoutes = require('./routes/modules');
@@ -15,6 +17,7 @@ const progressRoutes = require('./routes/progress');
 const commentRoutes = require('./routes/comments');
 const pollRoutes = require('./routes/polls');
 const contentRoutes = require('./routes/content');
+const announcementRoutes = require('./routes/announcements');
 
 const app = express();
 const server = http.createServer(app);
@@ -29,6 +32,8 @@ connectDB();
 
 app.use(cors());
 app.use(express.json());
+app.use(optionalAuth);
+app.use(trackVisitor);
 app.use('/uploads', express.static('uploads'));
 
 app.use('/api/auth', authRoutes);
@@ -41,6 +46,7 @@ app.use('/api/progress', progressRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/polls', pollRoutes);
 app.use('/api/content', contentRoutes);
+app.use('/api/announcements', announcementRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'CloudLiteracy API Server' });

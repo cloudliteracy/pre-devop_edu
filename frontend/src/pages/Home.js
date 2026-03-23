@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import AnnouncementBar from '../components/AnnouncementBar';
 
 const Home = () => {
   const { isAuthenticated } = useContext(AuthContext);
@@ -46,7 +47,9 @@ const Home = () => {
   };
   return (
     <div style={styles.container}>
-      <div style={styles.hero}>
+      <AnnouncementBar />
+      <div style={styles.contentWrapper}>
+        <div style={styles.hero}>
         <h1 style={styles.mainTitle}>Welcome to CloudLiteracy</h1>
         <h2 style={styles.subtitle}>Master Pre-DevOps - One Module at a Time</h2>
         <p style={styles.description}>
@@ -125,6 +128,7 @@ const Home = () => {
           </div>
         </div>
       </div>
+      </div>
     </div>
   );
 };
@@ -134,11 +138,16 @@ const styles = {
     minHeight: '100vh',
     background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%)',
     display: 'flex',
+    flexDirection: 'column'
+  },
+  contentWrapper: {
+    display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
     padding: '40px 20px',
-    gap: '60px'
+    gap: '60px',
+    flex: 1
   },
   hero: {
     textAlign: 'center',
