@@ -6,6 +6,12 @@ const moduleSchema = new mongoose.Schema({
   price: { type: Number, required: true },
   currency: { type: String, default: 'USD' },
   order: { type: Number, required: true },
+  videoUrl: { type: String },
+  markdownContent: { type: String },
+  markdownImages: [{
+    filename: String,
+    path: String
+  }],
   pdfs: [{
     title: String,
     filename: String,

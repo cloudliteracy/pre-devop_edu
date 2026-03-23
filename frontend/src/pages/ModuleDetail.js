@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { moduleAPI, paymentAPI } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import ProgressBar from '../components/ProgressBar';
+import ThreeStageLearn from '../components/ThreeStageLearn';
 import socketService from '../services/socket';
 import axios from 'axios';
 
@@ -302,84 +303,13 @@ const ModuleDetail = () => {
             {/* Progress Bar */}
             {progress && <ProgressBar progress={progress} totals={totals} />}
 
-            <div style={styles.contentCard}>
-              <div style={styles.accessBadge}>
-                ✓ You have access to this module
-              </div>
-
-              {/* PDFs Section */}
-              {module.pdfs && module.pdfs.length > 0 && (
-                <div style={styles.section}>
-                  <h3 style={styles.sectionTitle}>📄 PDF Resources</h3>
-                  <div style={styles.resourceList}>
-                    {module.pdfs.map((pdf, index) => (
-                      <div key={index} style={styles.resourceItem}>
-                        <span style={styles.resourceName}>{pdf.title || `PDF ${index + 1}`}</span>
-                        <a 
-                          href={`http://localhost:5000/${pdf.path}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          style={styles.downloadButton}
-                          onClick={() => trackProgress('pdf', pdf._id || `pdf-${index}`)}
-                        >
-                          Download
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Videos Section */}
-              {module.videos && module.videos.length > 0 && (
-                <div style={styles.section}>
-                  <h3 style={styles.sectionTitle}>🎥 Video Lessons</h3>
-                  <div style={styles.resourceList}>
-                    {module.videos.map((video, index) => (
-                      <div key={index} style={styles.resourceItem}>
-                        <span style={styles.resourceName}>{video.title || `Video ${index + 1}`}</span>
-                        <span style={styles.duration}>{video.duration || 'N/A'}</span>
-                        <a 
-                          href={`http://localhost:5000/${video.path}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          style={styles.downloadButton}
-                          onClick={() => trackProgress('video', video._id || `video-${index}`)}
-                        >
-                          Watch
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-            {/* Quiz Section */}
-            {module.quiz && module.quiz.questions && module.quiz.questions.length > 0 && (
-              <div style={styles.section}>
-                <h3 style={styles.sectionTitle}>✅ Quiz</h3>
-                <p style={styles.quizInfo}>
-                  {module.quiz.questions.length} questions | Passing score: {module.quiz.passingScore}%
-                </p>
-                <button style={styles.quizButton}>
-                  Start Quiz
-                </button>
-              </div>
-            )}
-
-            {/* Empty State */}
-            {(!module.pdfs || module.pdfs.length === 0) && 
-             (!module.videos || module.videos.length === 0) && 
-             (!module.quiz || !module.quiz.questions || module.quiz.questions.length === 0) && (
-              <div style={styles.emptyState}>
-                <p style={styles.emptyText}>
-                  🚧 Content is being prepared. Check back soon!
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-      </>
+            {/* Three-Stage Learning Flow */}
+            <ThreeStageLearn 
+              moduleId={id} 
+              progress={progress} 
+              onProgressUpdate={fetchProgress}
+            />
+          </>
         )}
       </div>
     </div>

@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
   isSuperAdmin: { type: Boolean, default: false },
   isSuspended: { type: Boolean, default: false },
   mustChangePassword: { type: Boolean, default: false },
+  canUploadContent: { type: Boolean, default: false },
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
   purchasedModules: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Module' }],

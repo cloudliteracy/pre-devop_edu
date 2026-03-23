@@ -115,3 +115,53 @@ exports.updateQuizProgress = async (req, res) => {
     res.status(500).json({ message: 'Failed to update quiz progress', error: error.message });
   }
 };
+
+exports.markVideoComplete = async (req, res) => {
+  try {
+    const { moduleId } = req.params;
+    const userId = req.user._id;
+
+    let progress = await Progress.findOne({ userId, moduleId });
+
+    if (!progress) {
+      progress = new Progress({ userId, moduleId });
+    }
+
+    progress.videoCompleted = true;
+    progress.lastAccessedAt = Date.now();
+    await progress.save();
+
+    res.json({ 
+      success: true, 
+      progress,
+      message: 'Video marked as complete' 
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to mark video complete', error: error.message });
+  }
+};
+
+exports.markMarkdownViewed = async (req, res) => {
+  try {
+    const { moduleId } = req.params;
+    const userId = req.user._id;
+
+    let progress = await Progress.findOne({ userId, moduleId });
+
+    if (!progress) {
+      progress = new Progress({ userId, moduleId });
+    }
+
+    progress.markdownViewed = true;
+    progress.lastAccessedAt = Date.now();
+    await progress.save();
+
+    res.json({ 
+      success: true, 
+      progress,
+      message: 'Practice content marked as viewed' 
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to mark markdown viewed', error: error.message });
+  }
+};

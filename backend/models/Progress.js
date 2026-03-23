@@ -13,6 +13,8 @@ const progressSchema = new mongoose.Schema({
   },
   videosWatched: [{ type: String }],
   pdfsDownloaded: [{ type: String }],
+  videoCompleted: { type: Boolean, default: false },
+  markdownViewed: { type: Boolean, default: false },
   quizCompleted: { type: Boolean, default: false },
   quizScore: { type: Number, default: 0 },
   completionPercentage: { type: Number, default: 0 },

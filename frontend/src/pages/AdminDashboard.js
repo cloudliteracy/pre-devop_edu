@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import socketService from '../services/socket';
+import ContentManagement from '../components/ContentManagement';
+import * as contentService from '../services/content';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -21,8 +23,11 @@ const AdminDashboard = () => {
   const [newAdminForm, setNewAdminForm] = useState({ name: '', email: '' });
   const [tempPassword, setTempPassword] = useState('');
   const [adminMessage, setAdminMessage] = useState({ text: '', type: '' });
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    setCurrentUser(user);
     fetchDashboardData();
 
     socketService.connect();
@@ -199,6 +204,25 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleToggleUploadAccess = async (adminId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const { data } = await contentService.toggleUploadAccess(adminId);
+      
+      setAdminMessage({ text: data.message, type: 'success' });
+      
+      const adminsRes = await axios.get('http://localhost:5000/api/admin/admins', { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      setAdmins(adminsRes.data);
+    } catch (error) {
+      setAdminMessage({ 
+        text: error.response?.data?.message || 'Failed to update upload access', 
+        type: 'error' 
+      });
+    }
+  };
+
   const closeCreateAdminModal = () => {
     setShowCreateAdminModal(false);
     setNewAdminForm({ name: '', email: '' });
@@ -282,6 +306,18 @@ const AdminDashboard = () => {
               }}
             >
               Admin Management
+            </button>
+          )}
+          {(currentUser?.isSuperAdmin || currentUser?.canUploadContent) && (
+            <button
+              onClick={() => setActiveTab('contentManagement')}
+              style={{
+                ...styles.tab,
+                backgroundColor: activeTab === 'contentManagement' ? '#FFD700' : '#1a1a1a',
+                color: activeTab === 'contentManagement' ? '#000' : '#FFD700'
+              }}
+            >
+              Content Management
             </button>
           )}
         </div>
@@ -701,6 +737,18 @@ const AdminDashboard = () => {
                       >
                         {admin.isSuspended ? 'Reinstate' : 'Suspend'}
                       </button>
+                      {currentUser?.isSuperAdmin && (
+                        <button
+                          onClick={() => handleToggleUploadAccess(admin._id)}
+                          style={{
+                            ...styles.suspendButton,
+                            backgroundColor: admin.canUploadContent ? '#ff9800' : '#4CAF50',
+                            marginBottom: '10px'
+                          }}
+                        >
+                          {admin.canUploadContent ? '🚫 Revoke Upload Access' : '✅ Grant Upload Access'}
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDeleteAdmin(admin._id, admin.name)}
                         style={styles.deleteButton}
@@ -713,6 +761,11 @@ const AdminDashboard = () => {
               ))}
             </div>
           </div>
+        )}
+
+        {/* Content Management Tab */}
+        {activeTab === 'contentManagement' && (
+          <ContentManagement user={currentUser} />
         )}
 
         {/* Create Admin Modal */}

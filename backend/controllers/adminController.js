@@ -328,3 +328,35 @@ exports.deleteAdmin = async (req, res) => {
     res.status(500).json({ message: 'Failed to delete admin', error: error.message });
   }
 };
+
+exports.toggleContentUploadAccess = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const requestingUser = req.user;
+
+    if (!requestingUser.isSuperAdmin) {
+      return res.status(403).json({ message: 'Only super admin can manage content upload access' });
+    }
+
+    const targetAdmin = await User.findById(id);
+
+    if (!targetAdmin || targetAdmin.role !== 'admin') {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    targetAdmin.canUploadContent = !targetAdmin.canUploadContent;
+    await targetAdmin.save();
+
+    res.json({
+      message: `Content upload access ${targetAdmin.canUploadContent ? 'granted' : 'revoked'} successfully`,
+      admin: {
+        id: targetAdmin._id,
+        name: targetAdmin.name,
+        email: targetAdmin.email,
+        canUploadContent: targetAdmin.canUploadContent
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update content upload access', error: error.message });
+  }
+};
