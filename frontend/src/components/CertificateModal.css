@@ -1,0 +1,153 @@
+.certificate-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.certificate-content {
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 40px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 2px solid #FFD700;
+}
+
+.congrats-header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #FFD700;
+}
+
+.congrats-header h1 {
+  color: #FFD700;
+  font-size: 36px;
+  margin-bottom: 10px;
+}
+
+.congrats-header p {
+  color: #ccc;
+  font-size: 16px;
+}
+
+.certificate {
+  background: #fff;
+  padding: 40px;
+  border-radius: 8px;
+  border: 10px solid #FFD700;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.certificate .logo {
+  width: 100px;
+  height: 100px;
+  margin-bottom: 20px;
+}
+
+.certificate h1 {
+  color: #FFD700;
+  font-size: 48px;
+  margin: 20px 0;
+  font-family: 'Georgia', serif;
+}
+
+.certificate h2 {
+  color: #000;
+  font-size: 32px;
+  margin: 10px 0;
+  font-weight: bold;
+}
+
+.certificate p {
+  color: #333;
+  font-size: 18px;
+  margin: 10px 0;
+}
+
+.certificate .score {
+  font-size: 36px;
+  color: #FFD700;
+  font-weight: bold;
+  margin: 20px 0;
+}
+
+.certificate .qr-code {
+  margin: 20px 0;
+}
+
+.certificate .qr-code img {
+  width: 150px;
+  height: 150px;
+}
+
+.certificate .cert-id {
+  font-size: 12px;
+  color: #666;
+  margin-top: 20px;
+  font-family: monospace;
+}
+
+.certificate-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.download-btn {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #000;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.download-btn:hover {
+  transform: scale(1.05);
+}
+
+.close-btn {
+  background: #333;
+  color: #FFD700;
+  border: 2px solid #FFD700;
+  padding: 15px 30px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.close-btn:hover {
+  background: #FFD700;
+  color: #000;
+}
+
+@media print {
+  .certificate-modal,
+  .congrats-header,
+  .certificate-actions {
+    display: none;
+  }
+  
+  .certificate {
+    border: 10px solid #FFD700;
+    page-break-inside: avoid;
+  }
+}

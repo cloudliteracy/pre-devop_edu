@@ -17,6 +17,18 @@ const progressSchema = new mongoose.Schema({
   markdownViewed: { type: Boolean, default: false },
   quizCompleted: { type: Boolean, default: false },
   quizScore: { type: Number, default: 0 },
+  quizAttempts: [{
+    questions: [{
+      question: String,
+      options: [String],
+      correctAnswer: Number,
+      userAnswer: Number
+    }],
+    score: Number,
+    passed: Boolean,
+    certificateId: String,
+    attemptedAt: { type: Date, default: Date.now }
+  }],
   completionPercentage: { type: Number, default: 0 },
   lastAccessedAt: { type: Date, default: Date.now }
 }, { timestamps: true });

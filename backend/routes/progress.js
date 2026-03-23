@@ -8,5 +8,7 @@ router.get('/:moduleId', auth, progressController.getProgress);
 router.put('/:moduleId/quiz', auth, progressController.updateQuizProgress);
 router.post('/:moduleId/video-complete', auth, progressController.markVideoComplete);
 router.post('/:moduleId/markdown-viewed', auth, progressController.markMarkdownViewed);
+router.post('/:moduleId/submit-quiz', auth, progressController.submitQuiz);
+router.get('/certificate/:certificateId', auth, progressController.generateCertificate);
 
 module.exports = router;

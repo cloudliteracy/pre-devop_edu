@@ -1,5 +1,6 @@
 const Progress = require('../models/Progress');
 const Module = require('../models/Module');
+const QRCode = require('qrcode');
 
 exports.trackProgress = async (req, res) => {
   try {
@@ -163,5 +164,120 @@ exports.markMarkdownViewed = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to mark markdown viewed', error: error.message });
+  }
+};
+
+exports.submitQuiz = async (req, res) => {
+  try {
+    const { moduleId } = req.params;
+    const { answers } = req.body;
+    const userId = req.user._id;
+
+    const module = await Module.findById(moduleId);
+    if (!module || !module.quiz || !module.quiz.questions.length) {
+      return res.status(404).json({ message: 'Quiz not found' });
+    }
+
+    let progress = await Progress.findOne({ userId, moduleId });
+    if (!progress) {
+      progress = new Progress({ userId, moduleId });
+    }
+
+    // Calculate score
+    let correctCount = 0;
+    const questionsWithAnswers = module.quiz.questions.map((q, index) => ({
+      question: q.question,
+      options: q.options,
+      correctAnswer: q.correctAnswer,
+      userAnswer: answers[index]
+    }));
+
+    questionsWithAnswers.forEach((q) => {
+      if (q.userAnswer === q.correctAnswer) correctCount++;
+    });
+
+    const score = Math.round((correctCount / module.quiz.questions.length) * 100);
+    const passed = score >= module.quiz.passingScore;
+
+    // Generate certificate ID if passed and first time passing
+    let certificateId = null;
+    if (passed && !progress.quizCompleted) {
+      certificateId = `CL-${moduleId.toString().slice(-6)}-${userId.toString().slice(-6)}-${Date.now()}`;
+    }
+
+    // Store attempt
+    progress.quizAttempts.push({
+      questions: questionsWithAnswers,
+      score,
+      passed,
+      certificateId,
+      attemptedAt: new Date()
+    });
+
+    // Update progress if passed
+    if (passed) {
+      progress.quizCompleted = true;
+      progress.quizScore = Math.max(progress.quizScore, score);
+    }
+
+    progress.lastAccessedAt = Date.now();
+    await progress.save();
+
+    // Check if next module unlocked
+    const nextModule = await Module.findOne({ order: module.order + 1 });
+    const nextModuleUnlocked = passed && nextModule ? true : false;
+
+    res.json({
+      success: true,
+      score,
+      passed,
+      correctCount,
+      totalQuestions: module.quiz.questions.length,
+      passingScore: module.quiz.passingScore,
+      certificateId,
+      questionsWithAnswers,
+      nextModuleUnlocked,
+      nextModuleId: nextModule?._id
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to submit quiz', error: error.message });
+  }
+};
+
+exports.generateCertificate = async (req, res) => {
+  try {
+    const { certificateId } = req.params;
+    const userId = req.user._id;
+
+    const progress = await Progress.findOne({
+      userId,
+      'quizAttempts.certificateId': certificateId
+    }).populate('moduleId');
+
+    if (!progress) {
+      return res.status(404).json({ message: 'Certificate not found' });
+    }
+
+    const attempt = progress.quizAttempts.find(a => a.certificateId === certificateId);
+    const module = progress.moduleId;
+
+    // Generate QR code
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-certificate/${certificateId}`;
+    const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl);
+
+    res.json({
+      success: true,
+      certificate: {
+        certificateId,
+        userName: req.user.name,
+        userEmail: req.user.email,
+        moduleName: module.title,
+        score: attempt.score,
+        completedDate: attempt.attemptedAt,
+        qrCode: qrCodeDataUrl
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to generate certificate', error: error.message });
   }
 };

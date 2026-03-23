@@ -360,3 +360,140 @@ exports.toggleContentUploadAccess = async (req, res) => {
     res.status(500).json({ message: 'Failed to update content upload access', error: error.message });
   }
 };
+
+exports.getQuizAnalytics = async (req, res) => {
+  try {
+    const { moduleId, search = '' } = req.query;
+    
+    const query = {};
+    if (moduleId) query.moduleId = moduleId;
+    
+    const allProgress = await Progress.find(query)
+      .populate('userId', 'name email')
+      .populate('moduleId', 'title')
+      .sort({ updatedAt: -1 });
+
+    let filteredProgress = allProgress.filter(p => p.quizAttempts.length > 0);
+
+    if (search) {
+      filteredProgress = filteredProgress.filter(p => 
+        p.userId?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        p.userId?.email?.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    const totalAttempts = filteredProgress.reduce((sum, p) => sum + p.quizAttempts.length, 0);
+    const passedAttempts = filteredProgress.reduce((sum, p) => 
+      sum + p.quizAttempts.filter(a => a.passed).length, 0
+    );
+    const allScores = filteredProgress.flatMap(p => p.quizAttempts.map(a => a.score));
+    const avgScore = allScores.length > 0 
+      ? (allScores.reduce((sum, s) => sum + s, 0) / allScores.length).toFixed(1)
+      : 0;
+
+    const learners = filteredProgress.map(p => ({
+      userId: p.userId._id,
+      userName: p.userId.name,
+      userEmail: p.userId.email,
+      moduleId: p.moduleId._id,
+      moduleName: p.moduleId.title,
+      totalAttempts: p.quizAttempts.length,
+      bestScore: Math.max(...p.quizAttempts.map(a => a.score)),
+      latestScore: p.quizAttempts[p.quizAttempts.length - 1].score,
+      passed: p.quizCompleted,
+      certificateId: p.quizAttempts.find(a => a.certificateId)?.certificateId,
+      attempts: p.quizAttempts.map(a => ({
+        score: a.score,
+        passed: a.passed,
+        attemptedAt: a.attemptedAt,
+        certificateId: a.certificateId,
+        questions: a.questions
+      }))
+    }));
+
+    res.json({
+      summary: {
+        totalAttempts,
+        passedAttempts,
+        passRate: totalAttempts > 0 ? ((passedAttempts / totalAttempts) * 100).toFixed(1) : 0,
+        avgScore: parseFloat(avgScore),
+        totalLearners: learners.length
+      },
+      learners
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch quiz analytics', error: error.message });
+  }
+};
+
+exports.exportQuizData = async (req, res) => {
+  try {
+    const { Parser } = require('json2csv');
+    const { moduleId } = req.query;
+    
+    const query = {};
+    if (moduleId) query.moduleId = moduleId;
+    
+    const allProgress = await Progress.find(query)
+      .populate('userId', 'name email')
+      .populate('moduleId', 'title');
+
+    const data = [];
+    allProgress.forEach(p => {
+      if (p.quizAttempts.length > 0) {
+        p.quizAttempts.forEach(attempt => {
+          data.push({
+            'Learner Name': p.userId?.name || 'N/A',
+            'Learner Email': p.userId?.email || 'N/A',
+            'Module': p.moduleId?.title || 'N/A',
+            'Score': attempt.score,
+            'Passed': attempt.passed ? 'Yes' : 'No',
+            'Certificate ID': attempt.certificateId || 'N/A',
+            'Attempted At': new Date(attempt.attemptedAt).toLocaleString()
+          });
+        });
+      }
+    });
+
+    const parser = new Parser();
+    const csv = parser.parse(data);
+
+    res.header('Content-Type', 'text/csv');
+    res.attachment('quiz-analytics.csv');
+    res.send(csv);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to export data', error: error.message });
+  }
+};
+
+exports.toggleQuizAnalyticsAccess = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const requestingUser = req.user;
+
+    if (!requestingUser.isSuperAdmin) {
+      return res.status(403).json({ message: 'Only super admin can manage quiz analytics access' });
+    }
+
+    const targetAdmin = await User.findById(id);
+
+    if (!targetAdmin || targetAdmin.role !== 'admin') {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    targetAdmin.canViewQuizAnalytics = !targetAdmin.canViewQuizAnalytics;
+    await targetAdmin.save();
+
+    res.json({
+      message: `Quiz analytics access ${targetAdmin.canViewQuizAnalytics ? 'granted' : 'revoked'} successfully`,
+      admin: {
+        id: targetAdmin._id,
+        name: targetAdmin.name,
+        email: targetAdmin.email,
+        canViewQuizAnalytics: targetAdmin.canViewQuizAnalytics
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update quiz analytics access', error: error.message });
+  }
+};

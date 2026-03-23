@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import socketService from '../services/socket';
 import ContentManagement from '../components/ContentManagement';
+import QuizAnalytics from '../components/QuizAnalytics';
 import * as contentService from '../services/content';
 
 const AdminDashboard = () => {
@@ -230,6 +231,28 @@ const AdminDashboard = () => {
     setAdminMessage({ text: '', type: '' });
   };
 
+  const handleToggleAnalyticsAccess = async (adminId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const { data } = await axios.put(`http://localhost:5000/api/admin/admins/${adminId}/toggle-analytics-access`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setAdminMessage({ text: data.message, type: 'success' });
+      
+      const adminsRes = await axios.get('http://localhost:5000/api/admin/admins', { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      setAdmins(adminsRes.data);
+    } catch (error) {
+      setAdminMessage({ 
+        text: error.response?.data?.message || 'Failed to update analytics access', 
+        type: 'error' 
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div style={styles.loadingContainer}>
@@ -318,6 +341,18 @@ const AdminDashboard = () => {
               }}
             >
               Content Management
+            </button>
+          )}
+          {(currentUser?.isSuperAdmin || currentUser?.canViewQuizAnalytics) && (
+            <button
+              onClick={() => setActiveTab('quizAnalytics')}
+              style={{
+                ...styles.tab,
+                backgroundColor: activeTab === 'quizAnalytics' ? '#FFD700' : '#1a1a1a',
+                color: activeTab === 'quizAnalytics' ? '#000' : '#FFD700'
+              }}
+            >
+              Quiz Analytics
             </button>
           )}
         </div>
@@ -738,16 +773,28 @@ const AdminDashboard = () => {
                         {admin.isSuspended ? 'Reinstate' : 'Suspend'}
                       </button>
                       {currentUser?.isSuperAdmin && (
-                        <button
-                          onClick={() => handleToggleUploadAccess(admin._id)}
-                          style={{
-                            ...styles.suspendButton,
-                            backgroundColor: admin.canUploadContent ? '#ff9800' : '#4CAF50',
-                            marginBottom: '10px'
-                          }}
-                        >
-                          {admin.canUploadContent ? '🚫 Revoke Upload Access' : '✅ Grant Upload Access'}
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handleToggleUploadAccess(admin._id)}
+                            style={{
+                              ...styles.suspendButton,
+                              backgroundColor: admin.canUploadContent ? '#ff9800' : '#4CAF50',
+                              marginBottom: '10px'
+                            }}
+                          >
+                            {admin.canUploadContent ? '🚫 Revoke Upload Access' : '✅ Grant Upload Access'}
+                          </button>
+                          <button
+                            onClick={() => handleToggleAnalyticsAccess(admin._id)}
+                            style={{
+                              ...styles.suspendButton,
+                              backgroundColor: admin.canViewQuizAnalytics ? '#ff9800' : '#4CAF50',
+                              marginBottom: '10px'
+                            }}
+                          >
+                            {admin.canViewQuizAnalytics ? '🚫 Revoke Analytics Access' : '✅ Grant Analytics Access'}
+                          </button>
+                        </>
                       )}
                       <button
                         onClick={() => handleDeleteAdmin(admin._id, admin.name)}
@@ -766,6 +813,11 @@ const AdminDashboard = () => {
         {/* Content Management Tab */}
         {activeTab === 'contentManagement' && (
           <ContentManagement user={currentUser} />
+        )}
+
+        {/* Quiz Analytics Tab */}
+        {activeTab === 'quizAnalytics' && (
+          <QuizAnalytics />
         )}
 
         {/* Create Admin Modal */}

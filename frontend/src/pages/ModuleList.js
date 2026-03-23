@@ -5,12 +5,14 @@ import { moduleAPI } from '../services/api';
 const ModuleList = () => {
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [userProgress, setUserProgress] = useState({});
 
   useEffect(() => {
     const fetchModules = async () => {
       try {
         const { data } = await moduleAPI.getAll();
         setModules(data);
+        await fetchUserProgress(data);
       } catch (error) {
         console.error('Error fetching modules:', error);
       } finally {
@@ -19,6 +21,35 @@ const ModuleList = () => {
     };
     fetchModules();
   }, []);
+
+  const fetchUserProgress = async (modulesList) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const progressData = {};
+      for (const module of modulesList) {
+        const response = await fetch(`http://localhost:5000/api/progress/${module._id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        progressData[module._id] = data.progress;
+      }
+      setUserProgress(progressData);
+    } catch (error) {
+      console.error('Error fetching progress:', error);
+    }
+  };
+
+  const isModuleLocked = (module) => {
+    if (module.order === 1) return false;
+    
+    const previousModule = modules.find(m => m.order === module.order - 1);
+    if (!previousModule) return false;
+    
+    const prevProgress = userProgress[previousModule._id];
+    return !prevProgress?.quizCompleted;
+  };
 
   if (loading) {
     return (
@@ -37,25 +68,38 @@ const ModuleList = () => {
       </div>
       
       <div style={styles.grid}>
-        {modules.map((module) => (
-          <div key={module._id} style={styles.card}>
-            <div style={styles.cardHeader}>
-              <span style={styles.moduleNumber}>Module {module.order}</span>
-              <span style={styles.price}>${module.price}</span>
+        {modules.map((module) => {
+          const locked = isModuleLocked(module);
+          return (
+            <div key={module._id} style={{
+              ...styles.card,
+              opacity: locked ? 0.6 : 1,
+              pointerEvents: locked ? 'none' : 'auto'
+            }}>
+              <div style={styles.cardHeader}>
+                <span style={styles.moduleNumber}>Module {module.order}</span>
+                <span style={styles.price}>${module.price}</span>
+              </div>
+              
+              {locked && (
+                <div style={styles.lockedBadge}>
+                  🔒 Complete previous module quiz to unlock
+                </div>
+              )}
+              
+              <h3 style={styles.moduleTitle}>{module.title}</h3>
+              <p style={styles.description}>{module.description}</p>
+              
+              <div style={styles.cardFooter}>
+                <Link to={`/module/${module._id}`} style={{ textDecoration: 'none' }}>
+                  <button style={styles.button} disabled={locked}>
+                    {locked ? '🔒 Locked' : 'View Module →'}
+                  </button>
+                </Link>
+              </div>
             </div>
-            
-            <h3 style={styles.moduleTitle}>{module.title}</h3>
-            <p style={styles.description}>{module.description}</p>
-            
-            <div style={styles.cardFooter}>
-              <Link to={`/module/${module._id}`} style={{ textDecoration: 'none' }}>
-                <button style={styles.button}>
-                  View Module →
-                </button>
-              </Link>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -166,6 +210,16 @@ const styles = {
     fontWeight: 'bold',
     cursor: 'pointer',
     transition: 'all 0.3s'
+  },
+  lockedBadge: {
+    backgroundColor: '#333',
+    color: '#FFD700',
+    padding: '8px 12px',
+    borderRadius: '6px',
+    fontSize: '12px',
+    marginBottom: '15px',
+    textAlign: 'center',
+    border: '1px solid #FFD700'
   }
 };
 

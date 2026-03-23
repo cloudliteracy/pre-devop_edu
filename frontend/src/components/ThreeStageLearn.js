@@ -3,12 +3,16 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import * as contentService from '../services/content';
+import QuizTaking from './QuizTaking';
+import CertificateModal from './CertificateModal';
 import './ThreeStageLearn.css';
 
 const ThreeStageLearn = ({ moduleId, progress, onProgressUpdate }) => {
   const [currentStage, setCurrentStage] = useState(1);
   const [moduleContent, setModuleContent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showCertificate, setShowCertificate] = useState(false);
+  const [certificateId, setCertificateId] = useState(null);
 
   useEffect(() => {
     loadContent();
@@ -53,6 +57,14 @@ const ThreeStageLearn = ({ moduleId, progress, onProgressUpdate }) => {
       setCurrentStage(3);
     } catch (error) {
       alert('Error marking practice complete');
+    }
+  };
+
+  const handleQuizComplete = (result) => {
+    onProgressUpdate();
+    if (result.passed && result.certificateId) {
+      setCertificateId(result.certificateId);
+      setShowCertificate(true);
     }
   };
 
@@ -241,10 +253,15 @@ const ThreeStageLearn = ({ moduleId, progress, onProgressUpdate }) => {
 
         {isStageUnlocked(3) ? (
           <div className="stage-content">
-            <div className="quiz-ready">
-              <p>You've completed the video and practice! Now test your knowledge.</p>
-              <p className="quiz-note">The quiz section will appear here (existing quiz component).</p>
-            </div>
+            {moduleContent?.quiz?.questions?.length > 0 ? (
+              <QuizTaking 
+                quiz={moduleContent.quiz} 
+                moduleId={moduleId}
+                onQuizComplete={handleQuizComplete}
+              />
+            ) : (
+              <div className="no-content">No quiz available for this module yet.</div>
+            )}
           </div>
         ) : (
           <div className="locked-overlay">
@@ -255,6 +272,13 @@ const ThreeStageLearn = ({ moduleId, progress, onProgressUpdate }) => {
           </div>
         )}
       </div>
+
+      {showCertificate && certificateId && (
+        <CertificateModal 
+          certificateId={certificateId}
+          onClose={() => setShowCertificate(false)}
+        />
+      )}
     </div>
   );
 };
