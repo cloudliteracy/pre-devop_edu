@@ -13,6 +13,8 @@ const userSchema = new mongoose.Schema({
   canViewQuizAnalytics: { type: Boolean, default: false },
   canViewSurveyAnalytics: { type: Boolean, default: false },
   canManageAnnouncements: { type: Boolean, default: false },
+  isCsrUser: { type: Boolean, default: false },
+  csrCodeUsed: { type: mongoose.Schema.Types.ObjectId, ref: 'CSRCode' },
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
   purchasedModules: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Module' }],

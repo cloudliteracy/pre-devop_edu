@@ -5,14 +5,63 @@ const { sendPasswordResetEmail } = require('../services/emailService');
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, csrCode } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    const user = new User({ name, email, password });
+    const userData = { name, email, password };
+
+    // Handle CSR code if provided
+    if (csrCode) {
+      const CSRCode = require('../models/CSRCode');
+      const code = await CSRCode.findOne({ code: csrCode.toUpperCase() });
+
+      if (!code) {
+        return res.status(400).json({ message: 'Invalid CSR code' });
+      }
+
+      if (!code.isActive) {
+        return res.status(400).json({ message: 'This CSR code has been deactivated' });
+      }
+
+      if (new Date() > code.expiresAt) {
+        return res.status(400).json({ message: 'This CSR code has expired' });
+      }
+
+      if (code.currentUses >= code.maxUses) {
+        return res.status(400).json({ message: 'This CSR code has reached its maximum usage limit' });
+      }
+
+      userData.isCsrUser = true;
+      userData.csrCodeUsed = code._id;
+
+      const user = new User(userData);
+      await user.save();
+
+      // Update CSR code usage
+      code.currentUses += 1;
+      code.usedBy.push({ userId: user._id, usedAt: new Date() });
+      await code.save();
+
+      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+      return res.status(201).json({ 
+        token, 
+        user: { 
+          id: user._id, 
+          name: user.name, 
+          email: user.email, 
+          role: user.role,
+          isCsrUser: user.isCsrUser
+        },
+        message: 'CSR registration successful! You now have free access to all modules.'
+      });
+    }
+
+    const user = new User(userData);
     await user.save();
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });

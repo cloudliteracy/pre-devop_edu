@@ -18,6 +18,7 @@ const commentRoutes = require('./routes/comments');
 const pollRoutes = require('./routes/polls');
 const contentRoutes = require('./routes/content');
 const announcementRoutes = require('./routes/announcements');
+const csrRoutes = require('./routes/csr');
 
 const app = express();
 const server = http.createServer(app);
@@ -47,6 +48,7 @@ app.use('/api/comments', commentRoutes);
 app.use('/api/polls', pollRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/announcements', announcementRoutes);
+app.use('/api/csr', csrRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'CloudLiteracy API Server' });

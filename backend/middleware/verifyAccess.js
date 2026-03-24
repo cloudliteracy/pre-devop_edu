@@ -5,8 +5,8 @@ const verifyModuleAccess = async (req, res, next) => {
     const { moduleId } = req.params;
     const user = await User.findById(req.user._id);
 
-    // Admins and Super Admins bypass payment - they can access all modules
-    if (user.role === 'admin' || user.isSuperAdmin) {
+    // Admins, Super Admins, and CSR Users bypass payment - they can access all modules
+    if (user.role === 'admin' || user.isSuperAdmin || user.isCsrUser) {
       return next();
     }
 

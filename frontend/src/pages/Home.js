@@ -82,11 +82,6 @@ const Home = () => {
               Browse Modules
             </button>
           </Link>
-          <Link to="/login" style={{ textDecoration: 'none' }}>
-            <button style={styles.secondaryButton}>
-              Login
-            </button>
-          </Link>
         </div>
       </div>
 
@@ -226,6 +221,18 @@ const styles = {
     fontWeight: 'bold',
     cursor: 'pointer',
     transition: 'all 0.3s'
+  },
+  csrButton: {
+    padding: '18px 45px',
+    fontSize: '18px',
+    backgroundColor: '#1a1a1a',
+    color: '#FFD700',
+    border: '2px solid #FFD700',
+    borderRadius: '10px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: 'all 0.3s',
+    boxShadow: '0 0 20px rgba(255, 215, 0, 0.3)'
   },
   ratingSection: {
     backgroundColor: '#1a1a1a',

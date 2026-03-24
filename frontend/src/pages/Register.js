@@ -1,5 +1,5 @@
-import React, { useState, useContext } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useContext, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 
@@ -9,8 +9,22 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const [draggedText, setDraggedText] = useState('');
+  const [csrCode, setCsrCode] = useState('');
+  const [isCsrRegistration, setIsCsrRegistration] = useState(false);
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const csr = params.get('csr');
+    const code = params.get('code');
+    
+    if (csr === 'true' && code) {
+      setIsCsrRegistration(true);
+      setCsrCode(code);
+    }
+  }, [location]);
 
   const handleDragStart = (e) => {
     e.dataTransfer.setData('text', 'cloudliteracy');
@@ -36,8 +50,18 @@ const Register = () => {
       return;
     }
     try {
-      const { data } = await authAPI.register(formData);
+      const registrationData = { ...formData };
+      if (isCsrRegistration && csrCode) {
+        registrationData.csrCode = csrCode;
+      }
+      
+      const { data } = await authAPI.register(registrationData);
       login(data.token, data.user);
+      
+      if (data.message) {
+        alert(data.message);
+      }
+      
       navigate('/modules');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
@@ -47,7 +71,13 @@ const Register = () => {
   return (
     <div style={styles.container}>
       <div style={styles.formCard}>
-        <h2 style={styles.title}>Join CloudLiteracy</h2>
+        <h2 style={styles.title}>{isCsrRegistration ? '🎓 CSR Registration' : 'Join CloudLiteracy'}</h2>
+        {isCsrRegistration && (
+          <div style={styles.csrBanner}>
+            <p>✓ CSR Access Code Verified</p>
+            <p>You will get FREE access to all modules!</p>
+          </div>
+        )}
         {error && <p style={styles.error}>{error}</p>}
         
         <form onSubmit={handleSubmit}>
@@ -163,6 +193,14 @@ const styles = {
     backgroundColor: '#2d1a1a',
     padding: '10px',
     borderRadius: '5px',
+    marginBottom: '20px',
+    textAlign: 'center'
+  },
+  csrBanner: {
+    background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.1))',
+    border: '2px solid #FFD700',
+    borderRadius: '10px',
+    padding: '15px',
     marginBottom: '20px',
     textAlign: 'center'
   },

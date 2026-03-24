@@ -6,6 +6,7 @@ import ContentManagement from '../components/ContentManagement';
 import QuizAnalytics from '../components/QuizAnalytics';
 import SurveyAnalytics from '../components/SurveyAnalytics';
 import AnnouncementBar from '../components/AnnouncementBar';
+import CSRManagement from '../components/CSRManagement';
 import * as contentService from '../services/content';
 import * as adminService from '../services/admin';
 
@@ -424,6 +425,18 @@ const AdminDashboard = () => {
               }}
             >
               Survey Analytics
+            </button>
+          )}
+          {currentUser?.isSuperAdmin && (
+            <button
+              onClick={() => setActiveTab('csrManagement')}
+              style={{
+                ...styles.tab,
+                backgroundColor: activeTab === 'csrManagement' ? '#FFD700' : '#1a1a1a',
+                color: activeTab === 'csrManagement' ? '#000' : '#FFD700'
+              }}
+            >
+              🎓 CSR Management
             </button>
           )}
         </div>
@@ -941,6 +954,11 @@ const AdminDashboard = () => {
         {/* Survey Analytics Tab */}
         {activeTab === 'surveyAnalytics' && (
           <SurveyAnalytics surveys={surveys} />
+        )}
+
+        {/* CSR Management Tab */}
+        {activeTab === 'csrManagement' && currentUser?.isSuperAdmin && (
+          <CSRManagement user={currentUser} />
         )}
 
         {/* Create Admin Modal */}

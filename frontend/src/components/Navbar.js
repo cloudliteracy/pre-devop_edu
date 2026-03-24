@@ -1,10 +1,12 @@
 import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import CSRCodeEntry from './CSRCodeEntry';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useContext(AuthContext);
   const [hoveredLink, setHoveredLink] = React.useState(null);
+  const [showCSRModal, setShowCSRModal] = React.useState(false);
 
   const getLinkStyle = (linkName) => ({
     ...styles.link,
@@ -83,6 +85,14 @@ const Navbar = () => {
           </Link>
           {isAuthenticated ? (
             <>
+              <button 
+                onClick={() => setShowCSRModal(true)}
+                style={getLinkStyle('csr')}
+                onMouseEnter={() => setHoveredLink('csr')}
+                onMouseLeave={() => setHoveredLink(null)}
+              >
+                🎓 CSR Access Code
+              </button>
               {user?.role === 'admin' && (
                 <Link 
                   to="/admin" 
@@ -108,13 +118,27 @@ const Navbar = () => {
               >
                 Login
               </Link>
-              <Link to="/register" style={styles.registerButton}>
+              <Link 
+                to="/register" 
+                style={getLinkStyle('register')}
+                onMouseEnter={() => setHoveredLink('register')}
+                onMouseLeave={() => setHoveredLink(null)}
+              >
                 Register
               </Link>
+              <button 
+                onClick={() => setShowCSRModal(true)}
+                style={getLinkStyle('csr')}
+                onMouseEnter={() => setHoveredLink('csr')}
+                onMouseLeave={() => setHoveredLink(null)}
+              >
+                🎓 CSR Access Code
+              </button>
             </>
           )}
         </div>
       </div>
+      {showCSRModal && <CSRCodeEntry onClose={() => setShowCSRModal(false)} />}
     </nav>
   );
 };
@@ -164,7 +188,9 @@ const styles = {
     fontSize: '16px',
     fontWeight: '500',
     transition: 'all 0.3s',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    background: 'none',
+    border: 'none'
   },
   userName: {
     color: '#ccc',
@@ -179,16 +205,6 @@ const styles = {
     fontSize: '15px',
     fontWeight: 'bold',
     cursor: 'pointer',
-    transition: 'all 0.3s'
-  },
-  registerButton: {
-    backgroundColor: '#FFD700',
-    color: '#000',
-    textDecoration: 'none',
-    padding: '8px 20px',
-    borderRadius: '6px',
-    fontSize: '15px',
-    fontWeight: 'bold',
     transition: 'all 0.3s'
   }
 };
