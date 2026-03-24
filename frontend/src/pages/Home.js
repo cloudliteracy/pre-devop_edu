@@ -5,17 +5,28 @@ import { AuthContext } from '../context/AuthContext';
 import AnnouncementBar from '../components/AnnouncementBar';
 import HelpDeskButton from '../components/HelpDeskButton';
 import FeaturedTestimonials from '../components/FeaturedTestimonials';
+import TestimonialForm from '../components/TestimonialForm';
 
 const Home = () => {
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [stats, setStats] = useState({ averageRating: 0, totalRatings: 0 });
   const [submitted, setSubmitted] = useState(false);
+  const [showTestimonialForm, setShowTestimonialForm] = useState(false);
+  const [userTestimonial, setUserTestimonial] = useState(null);
+  const [checkTestimonialLoading, setCheckTestimonialLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); 
 
   useEffect(() => {
     fetchRatingStats();
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      checkUserTestimonial();
+    }
+  }, [isAuthenticated, user]); 
 
   const fetchRatingStats = async () => {
     try {
@@ -47,6 +58,33 @@ const Home = () => {
       console.error('Failed to submit rating:', error);
     }
   };
+
+  const checkUserTestimonial = async () => {
+    if (!user || !isAuthenticated) return;
+
+    try {
+      setCheckTestimonialLoading(true);
+      const token = localStorage.getItem('token');
+      const { data } = await axios.get('http://localhost:5000/api/testimonials', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const myTestimonial = data.testimonials.find(t => t.userId._id === user.id || t.userId._id === user._id);
+      setUserTestimonial(myTestimonial || null);
+    } catch (error) {
+      console.error('Failed to check user testimonial:', error);
+      setUserTestimonial(null);
+    } finally {
+      setCheckTestimonialLoading(false);
+    }
+  };
+
+  const handleTestimonialSuccess = () => {
+    setShowTestimonialForm(false);
+    checkUserTestimonial();
+    setRefreshKey(prev => prev + 1);
+  };
+
   return (
     <div style={styles.container}>
       <AnnouncementBar />
@@ -129,7 +167,29 @@ const Home = () => {
       </div>
 
       {/* Featured Testimonials */}
-      <FeaturedTestimonials />
+      <FeaturedTestimonials refreshKey={refreshKey} />
+      
+      {/* Testimonial Submission Section */}
+      {!checkTestimonialLoading && isAuthenticated && !userTestimonial && (
+        <div style={styles.testimonialSection}>
+          <h2 style={styles.testimonialTitle}>Share Your Testimonial</h2>
+          <p style={styles.testimonialSubtitle}>Tell others about your CloudLiteracy experience!</p>
+          
+          {!showTestimonialForm ? (
+            <button 
+              onClick={() => setShowTestimonialForm(true)}
+              style={styles.testimonialCtaButton}
+            >
+              ✍️ Write Testimonial
+            </button>
+          ) : (
+            <TestimonialForm 
+              onSuccess={handleTestimonialSuccess}
+              onCancel={() => setShowTestimonialForm(false)} 
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -308,6 +368,40 @@ const styles = {
     width: '1px',
     height: '50px',
     backgroundColor: '#333'
+  },
+  testimonialSection: {
+    backgroundColor: '#1a1a1a',
+    border: '1px solid #FFD700',
+    borderRadius: '15px',
+    padding: '40px',
+    textAlign: 'center',
+    maxWidth: '800px',
+    margin: '0 auto 60px',
+    width: '100%',
+    boxShadow: '0 8px 32px rgba(255, 215, 0, 0.2)'
+  },
+  testimonialTitle: {
+    color: '#FFD700',
+    fontSize: '32px',
+    marginBottom: '10px',
+    fontWeight: 'bold'
+  },
+  testimonialSubtitle: {
+    color: '#999',
+    fontSize: '16px',
+    marginBottom: '30px'
+  },
+  testimonialCtaButton: {
+    padding: '18px 45px',
+    fontSize: '18px',
+    backgroundColor: '#FFD700',
+    color: '#000',
+    border: 'none',
+    borderRadius: '10px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: 'all 0.3s',
+    boxShadow: '0 4px 15px rgba(255, 215, 0, 0.3)'
   }
 };
 

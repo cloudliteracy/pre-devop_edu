@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 
-const FeaturedTestimonials = () => {
+const FeaturedTestimonials = ({ refreshKey = 0 }) => {
   const [testimonials, setTestimonials] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchFeaturedTestimonials();
-  }, []);
+  }, [refreshKey]);
 
   const fetchFeaturedTestimonials = async () => {
     try {
@@ -84,16 +84,20 @@ const styles = {
   },
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: '25px',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '30px',
     marginBottom: '30px'
   },
+
   card: {
     backgroundColor: '#1a1a1a',
     border: '1px solid #FFD700',
     borderRadius: '15px',
     padding: '25px',
-    transition: 'all 0.3s'
+    transition: 'all 0.3s',
+    minHeight: '320px',
+    display: 'flex',
+    flexDirection: 'column'
   },
   header: {
     display: 'flex',
