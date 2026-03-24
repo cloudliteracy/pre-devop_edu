@@ -78,8 +78,8 @@ exports.getFeaturedTestimonials = async (req, res) => {
       isFeatured: true 
     })
       .populate('userId', 'name')
-      .sort({ rating: -1, createdAt: -1 })
-      .limit(3);
+      .sort({ rating: -1, createdAt: -1 });
+      // Unlimited featured, grouped by 5 per row in frontend
 
     res.json(testimonials);
   } catch (error) {

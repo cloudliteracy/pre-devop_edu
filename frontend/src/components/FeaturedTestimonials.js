@@ -13,7 +13,12 @@ const FeaturedTestimonials = ({ refreshKey = 0 }) => {
   const fetchFeaturedTestimonials = async () => {
     try {
       const { data } = await axios.get('http://localhost:5000/api/testimonials/featured');
-      setTestimonials(data);
+      // Group into rows of 5, unlimited rows
+      const rows = [];
+      for (let i = 0; i < data.length; i += 5) {
+        rows.push(data.slice(i, i + 5));
+      }
+      setTestimonials(rows);
     } catch (error) {
       console.error('Failed to fetch featured testimonials:', error);
     } finally {
@@ -36,42 +41,45 @@ const FeaturedTestimonials = ({ refreshKey = 0 }) => {
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>What Our Learners Say</h2>
-      <div style={styles.grid}>
-        {testimonials.map(testimonial => (
-          <div key={testimonial._id} style={styles.card}>
-            <div style={styles.header}>
-              {testimonial.profilePhoto ? (
-                <img
-                  src={`http://localhost:5000/${testimonial.profilePhoto}`}
-                  alt={testimonial.userId.name}
-                  style={styles.avatar}
-                />
-              ) : (
-                <div style={styles.avatarPlaceholder}>
-                  {testimonial.userId.name.charAt(0).toUpperCase()}
+      <div style={styles.gridContainer}>
+        {testimonials.map((row, rowIndex) => (
+          <div key={rowIndex} style={styles.row}>
+            {row.map(testimonial => (
+              <div key={testimonial._id} style={styles.card}>
+                <div style={styles.header}>
+                  {testimonial.profilePhoto ? (
+                    <img
+                      src={`http://localhost:5000/${testimonial.profilePhoto}`}
+                      alt={testimonial.userId.name}
+                      style={styles.avatar}
+                    />
+                  ) : (
+                    <div style={styles.avatarPlaceholder}>
+                      {testimonial.userId.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <div style={styles.userName}>{testimonial.userId.name}</div>
+                    <div style={styles.rating}>{renderStars(testimonial.rating)}</div>
+                  </div>
                 </div>
-              )}
-              <div>
-                <div style={styles.userName}>{testimonial.userId.name}</div>
-                <div style={styles.rating}>{renderStars(testimonial.rating)}</div>
+                <p style={styles.text}>
+                  "{testimonial.testimonialText.length > 120 
+                    ? testimonial.testimonialText.substring(0, 120) + '...' 
+                    : testimonial.testimonialText}"
+                </p>
               </div>
-            </div>
-            <p style={styles.text}>
-              "{testimonial.testimonialText.length > 150 
-                ? testimonial.testimonialText.substring(0, 150) + '...' 
-                : testimonial.testimonialText}"
-            </p>
+            ))}
           </div>
         ))}
       </div>
-
     </div>
   );
 };
 
 const styles = {
   container: {
-    maxWidth: '1200px',
+    maxWidth: '900px',
     margin: '60px auto',
     padding: '0 20px'
   },
@@ -82,66 +90,73 @@ const styles = {
     textAlign: 'center',
     marginBottom: '40px'
   },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '30px',
+  gridContainer: {
     marginBottom: '30px'
+  },
+  row: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '15px',
+    marginBottom: '20px',
+    flexWrap: 'wrap'
   },
 
   card: {
     backgroundColor: '#1a1a1a',
     border: '1px solid #FFD700',
-    borderRadius: '15px',
-    padding: '25px',
+    borderRadius: '4px',
+    padding: '12px',
     transition: 'all 0.3s',
-    minHeight: '320px',
+    height: '160px',
+    width: '220px',
+    margin: '0',
     display: 'flex',
     flexDirection: 'column'
   },
   header: {
     display: 'flex',
-    gap: '15px',
+    gap: '12px',
     alignItems: 'center',
-    marginBottom: '20px'
+    marginBottom: '15px'
   },
   avatar: {
-    width: '60px',
-    height: '60px',
+    width: '48px',
+    height: '48px',
     borderRadius: '50%',
     objectFit: 'cover',
     border: '2px solid #FFD700'
   },
   avatarPlaceholder: {
-    width: '60px',
-    height: '60px',
+    width: '48px',
+    height: '48px',
     borderRadius: '50%',
     backgroundColor: '#FFD700',
     color: '#000',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '28px',
+    fontSize: '22px',
     fontWeight: 'bold'
   },
   userName: {
     color: '#FFD700',
-    fontSize: '18px',
+    fontSize: '16px',
     fontWeight: 'bold',
-    marginBottom: '5px'
+    marginBottom: '4px'
   },
   rating: {
     display: 'flex',
     gap: '2px'
   },
   star: {
-    fontSize: '16px'
+    fontSize: '14px'
   },
   text: {
     color: '#ccc',
-    fontSize: '15px',
-    lineHeight: '1.6',
-    fontStyle: 'italic'
+    fontSize: '14px',
+    lineHeight: '1.5',
+    fontStyle: 'italic',
+    flexGrow: 1
   },
   linkContainer: {
     textAlign: 'center'
