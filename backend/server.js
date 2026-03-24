@@ -20,6 +20,8 @@ const contentRoutes = require('./routes/content');
 const announcementRoutes = require('./routes/announcements');
 const csrRoutes = require('./routes/csr');
 const voucherRoutes = require('./routes/vouchers');
+const helpdeskRoutes = require('./routes/helpdesk');
+const testimonialRoutes = require('./routes/testimonials');
 const { startVoucherExpirationCron } = require('./cronJobs');
 
 const app = express();
@@ -52,6 +54,8 @@ app.use('/api/content', contentRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/csr', csrRoutes);
 app.use('/api/vouchers', voucherRoutes);
+app.use('/api/helpdesk', helpdeskRoutes);
+app.use('/api/testimonials', testimonialRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'CloudLiteracy API Server' });

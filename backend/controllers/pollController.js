@@ -63,6 +63,12 @@ exports.createPoll = async (req, res) => {
           return res.status(400).json({ message: 'Choice questions need 2-10 options' });
         }
       }
+
+      if (q.questionType === 'file_upload') {
+        if (!q.allowedFileTypes || q.allowedFileTypes.length === 0) {
+          q.allowedFileTypes = ['pdf', 'video', 'link'];
+        }
+      }
     }
 
     const expiresAt = new Date();
@@ -90,6 +96,7 @@ exports.createPoll = async (req, res) => {
         questionText: q.questionText.trim(),
         questionType: q.questionType,
         isRequired: q.isRequired || false,
+        allowedFileTypes: q.allowedFileTypes || ['pdf', 'video', 'link'],
         options: q.options ? q.options.map(opt => ({ text: opt.trim() })) : [],
         responses: []
       })),
@@ -162,6 +169,7 @@ exports.updatePoll = async (req, res) => {
       questionText: q.questionText.trim(),
       questionType: q.questionType,
       isRequired: q.isRequired || false,
+      allowedFileTypes: q.allowedFileTypes || ['pdf', 'video', 'link'],
       options: q.options ? q.options.map(opt => ({ text: opt.trim() })) : [],
       responses: []
     }));
@@ -182,7 +190,12 @@ exports.updatePoll = async (req, res) => {
 exports.votePoll = async (req, res) => {
   try {
     const { id } = req.params;
-    const { responses } = req.body; // Array of { questionIndex, answer }
+    let responses = req.body.responses;
+    
+    // Parse responses if it's a string (from FormData)
+    if (typeof responses === 'string') {
+      responses = JSON.parse(responses);
+    }
 
     const poll = await Poll.findById(id);
     if (!poll) {
@@ -202,16 +215,57 @@ exports.votePoll = async (req, res) => {
       return res.status(400).json({ message: 'You have already responded to this survey' });
     }
 
+    // Process uploaded files
+    const uploadedFiles = req.files || [];
+
     // Add responses to each question
-    responses.forEach(({ questionIndex, answer }) => {
+    for (let i = 0; i < responses.length; i++) {
+      const { questionIndex, answer, links } = responses[i];
+      
       if (questionIndex >= 0 && questionIndex < poll.questions.length) {
-        poll.questions[questionIndex].responses.push({
+        const question = poll.questions[questionIndex];
+        const responseData = {
           userId: req.user._id,
           answer,
-          timestamp: new Date()
-        });
+          timestamp: new Date(),
+          files: []
+        };
+
+        // Handle file upload questions
+        if (question.questionType === 'file_upload') {
+          // Add uploaded files (PDFs and videos)
+          const questionFiles = uploadedFiles.filter(f => 
+            f.fieldname === `files_${questionIndex}`
+          );
+          
+          questionFiles.forEach(file => {
+            const fileType = file.mimetype.includes('pdf') ? 'pdf' : 'video';
+            responseData.files.push({
+              fileType,
+              fileName: file.originalname,
+              filePath: file.path,
+              fileSize: file.size,
+              uploadedAt: new Date()
+            });
+          });
+
+          // Add external links
+          if (links && Array.isArray(links)) {
+            links.forEach(link => {
+              if (link && link.trim()) {
+                responseData.files.push({
+                  fileType: 'link',
+                  linkUrl: link.trim(),
+                  uploadedAt: new Date()
+                });
+              }
+            });
+          }
+        }
+
+        poll.questions[questionIndex].responses.push(responseData);
       }
-    });
+    }
 
     await poll.save();
     await poll.populate('user', 'name role');

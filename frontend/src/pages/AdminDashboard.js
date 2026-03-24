@@ -9,6 +9,8 @@ import AnnouncementBar from '../components/AnnouncementBar';
 import CSRManagement from '../components/CSRManagement';
 import UserQuery from '../components/UserQuery';
 import VoucherManagement from '../components/VoucherManagement';
+import AdminHelpDesk from './AdminHelpDesk';
+import TestimonialManagement from '../components/TestimonialManagement';
 import * as contentService from '../services/content';
 import * as adminService from '../services/admin';
 
@@ -315,6 +317,27 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleToggleHelpDeskAccess = async (adminId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const { data } = await axios.put(`http://localhost:5000/api/admin/admins/${adminId}/toggle-helpdesk-access`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setAdminMessage({ text: data.message, type: 'success' });
+      
+      const adminsRes = await axios.get('http://localhost:5000/api/admin/admins', { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
+      setAdmins(adminsRes.data);
+    } catch (error) {
+      setAdminMessage({ 
+        text: error.response?.data?.message || 'Failed to update help desk access', 
+        type: 'error' 
+      });
+    }
+  };
+
   const handleSuspendUser = async (userId, userName, isSuspended) => {
     const action = isSuspended ? 'unsuspend' : 'suspend';
     if (!window.confirm(`Are you sure you want to ${action} user "${userName}"?`)) {
@@ -517,6 +540,18 @@ const AdminDashboard = () => {
           >
             🔍 User Query
           </button>
+          {(currentUser?.isSuperAdmin || currentUser?.canAccessHelpDesk) && (
+            <button
+              onClick={() => setActiveTab('helpDesk')}
+              style={{
+                ...styles.tab,
+                backgroundColor: activeTab === 'helpDesk' ? '#FFD700' : '#1a1a1a',
+                color: activeTab === 'helpDesk' ? '#000' : '#FFD700'
+              }}
+            >
+              💬 Help Desk
+            </button>
+          )}
           {currentUser?.isSuperAdmin && (
             <button
               onClick={() => setActiveTab('voucherManagement')}
@@ -527,6 +562,18 @@ const AdminDashboard = () => {
               }}
             >
               🎓 Voucher Management
+            </button>
+          )}
+          {(currentUser?.isSuperAdmin || currentUser?.role === 'admin') && (
+            <button
+              onClick={() => setActiveTab('testimonials')}
+              style={{
+                ...styles.tab,
+                backgroundColor: activeTab === 'testimonials' ? '#FFD700' : '#1a1a1a',
+                color: activeTab === 'testimonials' ? '#000' : '#FFD700'
+              }}
+            >
+              💬 Testimonials
             </button>
           )}
         </div>
@@ -1062,6 +1109,16 @@ const AdminDashboard = () => {
                           >
                             {admin.canManageAnnouncements ? '🚫 Revoke Announcements' : '✅ Grant Announcements'}
                           </button>
+                          <button
+                            onClick={() => handleToggleHelpDeskAccess(admin._id)}
+                            style={{
+                              ...styles.suspendButton,
+                              backgroundColor: admin.canAccessHelpDesk ? '#ff9800' : '#4CAF50',
+                              marginBottom: '10px'
+                            }}
+                          >
+                            {admin.canAccessHelpDesk ? '🚫 Revoke Help Desk' : '✅ Grant Help Desk'}
+                          </button>
                         </>
                       )}
                       <button
@@ -1106,6 +1163,16 @@ const AdminDashboard = () => {
         {/* Voucher Management Tab */}
         {activeTab === 'voucherManagement' && currentUser?.isSuperAdmin && (
           <VoucherManagement />
+        )}
+
+        {/* Help Desk Tab */}
+        {activeTab === 'helpDesk' && (currentUser?.isSuperAdmin || currentUser?.canAccessHelpDesk) && (
+          <AdminHelpDesk />
+        )}
+
+        {/* Testimonials Tab */}
+        {activeTab === 'testimonials' && (currentUser?.isSuperAdmin || currentUser?.role === 'admin') && (
+          <TestimonialManagement />
         )}
 
         {/* Create Admin Modal */}

@@ -764,3 +764,36 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ message: 'Failed to delete user', error: error.message });
   }
 };
+
+// Toggle Help Desk access (Super Admin only)
+exports.toggleHelpDeskAccess = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const requestingUser = req.user;
+
+    if (!requestingUser.isSuperAdmin) {
+      return res.status(403).json({ message: 'Only super admin can manage help desk access' });
+    }
+
+    const targetAdmin = await User.findById(id);
+
+    if (!targetAdmin || targetAdmin.role !== 'admin') {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    targetAdmin.canAccessHelpDesk = !targetAdmin.canAccessHelpDesk;
+    await targetAdmin.save();
+
+    res.json({
+      message: `Help desk access ${targetAdmin.canAccessHelpDesk ? 'granted' : 'revoked'} successfully`,
+      admin: {
+        id: targetAdmin._id,
+        name: targetAdmin.name,
+        email: targetAdmin.email,
+        canAccessHelpDesk: targetAdmin.canAccessHelpDesk
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update help desk access', error: error.message });
+  }
+};

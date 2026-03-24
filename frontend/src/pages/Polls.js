@@ -4,6 +4,8 @@ import * as pollService from '../services/polls';
 import socketService from '../services/socket';
 import QuestionAnalytics from '../components/QuestionAnalytics';
 import ThankYouModal from '../components/ThankYouModal';
+import FileUploadQuestion from '../components/FileUploadQuestion';
+import SurveyResponseForm from '../components/SurveyResponseForm';
 import './Polls.css';
 
 const Polls = () => {
@@ -91,18 +93,9 @@ const Polls = () => {
     }
   };
 
-  const handleSubmitResponse = async (pollId, responses) => {
-    if (!user) {
-      alert('Please login to respond');
-      return;
-    }
-
-    try {
-      await pollService.votePoll(pollId, responses);
-      setShowThankYou(true);
-    } catch (error) {
-      alert(error.response?.data?.message || 'Error submitting response');
-    }
+  const handleSubmitResponse = async () => {
+    setShowThankYou(true);
+    await loadPolls(); // Reload to show updated response count
   };
 
   const handleDeletePoll = async (pollId) => {
@@ -302,6 +295,7 @@ const Polls = () => {
                     <option value="single">Single Choice</option>
                     <option value="multiple">Multiple Choice</option>
                     <option value="open">Open-Ended</option>
+                    <option value="file_upload">File Upload (PDF/Video/Links)</option>
                   </select>
                 </div>
 
@@ -417,42 +411,6 @@ const Polls = () => {
 
 // Survey Card Component
 const SurveyCard = ({ poll, user, userResponded, isExpired, isExpanded, onToggleExpand, onSubmit, onDelete, onEdit, canDelete, canEdit, canViewAnalytics, formatTimeRemaining }) => {
-  const [responses, setResponses] = useState({});
-
-  const handleAnswerChange = (questionIndex, answer) => {
-    setResponses(prev => ({
-      ...prev,
-      [questionIndex]: answer
-    }));
-  };
-
-  const handleSubmit = () => {
-    const responseArray = poll.questions.map((q, index) => ({
-      questionIndex: index,
-      answer: responses[index]
-    }));
-
-    // Validate required questions answered
-    const unansweredRequired = poll.questions.filter((q, index) => {
-      if (!q.isRequired) return false;
-      
-      if (q.questionType === 'open') {
-        return !responses[index] || !responses[index].trim();
-      }
-      if (q.questionType === 'multiple') {
-        return !responses[index] || responses[index].length === 0;
-      }
-      return responses[index] === undefined;
-    });
-
-    if (unansweredRequired.length > 0) {
-      alert(`Please answer all required questions (${unansweredRequired.length} remaining)`);
-      return;
-    }
-
-    onSubmit(poll._id, responseArray);
-  };
-
   return (
     <div className="poll-card survey-card">
       <div className="poll-header">
@@ -488,73 +446,7 @@ const SurveyCard = ({ poll, user, userResponded, isExpired, isExpanded, onToggle
       <p className="survey-meta">{poll.questions?.length || 0} Question{poll.questions?.length !== 1 ? 's' : ''}</p>
 
       {!userResponded && !isExpired ? (
-        <div className="survey-response-form">
-          {poll.questions.map((question, qIndex) => (
-            <div key={qIndex} className="survey-question">
-              <h4 className="question-text">
-                Q{qIndex + 1}: {question.questionText}
-                {question.isRequired && <span className="required-asterisk"> *</span>}
-              </h4>
-              <div className="question-badges">
-                <span className="question-type-badge">
-                  {question.questionType === 'single' ? 'Single Choice' : question.questionType === 'multiple' ? 'Multiple Choice' : 'Open-Ended'}
-                </span>
-                {question.isRequired && <span className="required-badge">Required</span>}
-              </div>
-
-              {question.questionType === 'single' && (
-                <div className="question-options">
-                  {question.options.map((option, oIndex) => (
-                    <label key={oIndex} className="option-label">
-                      <input
-                        type="radio"
-                        name={`question-${qIndex}`}
-                        checked={responses[qIndex] === oIndex}
-                        onChange={() => handleAnswerChange(qIndex, oIndex)}
-                      />
-                      <span>{option.text}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              {question.questionType === 'multiple' && (
-                <div className="question-options">
-                  {question.options.map((option, oIndex) => (
-                    <label key={oIndex} className="option-label">
-                      <input
-                        type="checkbox"
-                        checked={Array.isArray(responses[qIndex]) && responses[qIndex].includes(oIndex)}
-                        onChange={(e) => {
-                          const current = responses[qIndex] || [];
-                          const newValue = e.target.checked
-                            ? [...current, oIndex]
-                            : current.filter(i => i !== oIndex);
-                          handleAnswerChange(qIndex, newValue);
-                        }}
-                      />
-                      <span>{option.text}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              {question.questionType === 'open' && (
-                <textarea
-                  className="open-response-input"
-                  placeholder="Type your response here..."
-                  value={responses[qIndex] || ''}
-                  onChange={(e) => handleAnswerChange(qIndex, e.target.value)}
-                  rows={4}
-                />
-              )}
-            </div>
-          ))}
-
-          <button onClick={handleSubmit} className="submit-response-btn">
-            Submit Response
-          </button>
-        </div>
+        <SurveyResponseForm poll={poll} onSuccess={onSubmit} />
       ) : (
         <div className="survey-analytics-section">
           {/* Analytics removed from public page - only in admin dashboard */}

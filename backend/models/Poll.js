@@ -19,8 +19,13 @@ const pollSchema = new mongoose.Schema({
     },
     questionType: {
       type: String,
-      enum: ['single', 'multiple', 'open'],
+      enum: ['single', 'multiple', 'open', 'file_upload'],
       required: true
+    },
+    allowedFileTypes: {
+      type: [String],
+      enum: ['pdf', 'video', 'link'],
+      default: ['pdf', 'video', 'link']
     },
     isRequired: {
       type: Boolean,
@@ -37,7 +42,21 @@ const pollSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
       },
-      answer: mongoose.Schema.Types.Mixed, // Array of numbers for multiple, number for single, string for open
+      answer: mongoose.Schema.Types.Mixed, // Array of numbers for multiple, number for single, string for open, object for file_upload
+      files: [{
+        fileType: {
+          type: String,
+          enum: ['pdf', 'video', 'link']
+        },
+        fileName: String,
+        filePath: String,
+        fileSize: Number,
+        linkUrl: String,
+        uploadedAt: {
+          type: Date,
+          default: Date.now
+        }
+      }]
       timestamp: {
         type: Date,
         default: Date.now

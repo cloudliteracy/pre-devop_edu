@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import AnnouncementBar from '../components/AnnouncementBar';
+import HelpDeskButton from '../components/HelpDeskButton';
+import FeaturedTestimonials from '../components/FeaturedTestimonials';
 
 const Home = () => {
   const { isAuthenticated } = useContext(AuthContext);
@@ -48,6 +50,7 @@ const Home = () => {
   return (
     <div style={styles.container}>
       <AnnouncementBar />
+      <HelpDeskButton />
       <div style={styles.contentWrapper}>
         <div style={styles.hero}>
         <h1 style={styles.mainTitle}>Welcome to CloudLiteracy</h1>
@@ -124,6 +127,9 @@ const Home = () => {
         </div>
       </div>
       </div>
+
+      {/* Featured Testimonials */}
+      <FeaturedTestimonials />
     </div>
   );
 };

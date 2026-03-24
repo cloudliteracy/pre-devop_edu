@@ -86,6 +86,14 @@ const Navbar = () => {
             About Us
           </Link>
           <Link 
+            to="/testimonials" 
+            style={getLinkStyle('testimonials')}
+            onMouseEnter={() => setHoveredLink('testimonials')}
+            onMouseLeave={() => setHoveredLink(null)}
+          >
+            Testimonials
+          </Link>
+          <Link 
             to="/contact" 
             style={getLinkStyle('contact')}
             onMouseEnter={() => setHoveredLink('contact')}

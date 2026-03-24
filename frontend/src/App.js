@@ -21,6 +21,7 @@ import Chat from './pages/Chat';
 import Polls from './pages/Polls';
 import Announcements from './pages/Announcements';
 import Vouchers from './pages/Vouchers';
+import Testimonials from './pages/Testimonials';
 import socketService from './services/socket';
 
 function AppContent() {
@@ -78,6 +79,7 @@ function AppContent() {
           <Route path="/chat" element={<Chat />} />
           <Route path="/polls" element={<Polls />} />
           <Route path="/vouchers" element={<Vouchers />} />
+          <Route path="/testimonials" element={<Testimonials />} />
           <Route path="/announcements-management" element={<Announcements />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/contact" element={<ContactUs />} />

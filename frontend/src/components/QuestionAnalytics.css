@@ -123,3 +123,58 @@
 .open-responses::-webkit-scrollbar-thumb:hover {
   background: #FFA500;
 }
+
+/* File upload responses */
+.file-responses {
+  display: flex;
+  flexDirection: column;
+  gap: 15px;
+  maxHeight: 400px;
+  overflowY: auto;
+}
+
+.uploaded-files {
+  display: flex;
+  flexDirection: column;
+  gap: 10px;
+}
+
+.file-item {
+  display: flex;
+  alignItems: center;
+  gap: 10px;
+  padding: 10px;
+  background: #0d0d0d;
+  border: 1px solid #333;
+  borderRadius: 6px;
+}
+
+.file-icon {
+  fontSize: 24px;
+}
+
+.file-link {
+  color: #FFD700;
+  textDecoration: none;
+  fontSize: 14px;
+  flex: 1;
+  overflow: hidden;
+  textOverflow: ellipsis;
+  whiteSpace: nowrap;
+}
+
+.file-link:hover {
+  color: #FFA500;
+  textDecoration: underline;
+}
+
+.file-size {
+  color: #999;
+  fontSize: 12px;
+}
+
+.no-files {
+  color: #666;
+  fontSize: 14px;
+  fontStyle: italic;
+}
