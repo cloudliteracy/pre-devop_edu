@@ -5,7 +5,7 @@ const TestimonialForm = ({ onSuccess, onCancel }) => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [testimonialText, setTestimonialText] = useState('');
-  const [profilePhoto, setProfilePhoto] = useState(null);
+  // const [profilePhoto, setProfilePhoto] = useState(null); // Removed photo upload
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -32,9 +32,7 @@ const TestimonialForm = ({ onSuccess, onCancel }) => {
       const formData = new FormData();
       formData.append('rating', rating);
       formData.append('testimonialText', testimonialText.trim());
-      if (profilePhoto) {
-        formData.append('profilePhoto', profilePhoto);
-      }
+      // Removed photo upload
 
       const token = localStorage.getItem('token');
       await axios.post('http://localhost:5000/api/testimonials', formData, {
@@ -53,16 +51,7 @@ const TestimonialForm = ({ onSuccess, onCancel }) => {
     }
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB');
-        return;
-      }
-      setProfilePhoto(file);
-    }
-  };
+  // Removed handleFileChange - no photo upload
 
   return (
     <div style={styles.container}>
@@ -105,20 +94,7 @@ const TestimonialForm = ({ onSuccess, onCancel }) => {
           </div>
         </div>
 
-        <div style={styles.formGroup}>
-          <label style={styles.label}>Profile Photo (Optional)</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            style={styles.fileInput}
-          />
-          {profilePhoto && (
-            <div style={styles.filePreview}>
-              Selected: {profilePhoto.name}
-            </div>
-          )}
-        </div>
+        {/* Photo upload removed */}
 
         <div style={styles.buttons}>
           <button type="button" onClick={onCancel} style={styles.cancelButton}>

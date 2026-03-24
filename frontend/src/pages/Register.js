@@ -11,6 +11,7 @@ const Register = () => {
   const [draggedText, setDraggedText] = useState('');
   const [csrCode, setCsrCode] = useState('');
   const [isCsrRegistration, setIsCsrRegistration] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState(null);
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
@@ -49,13 +50,25 @@ const Register = () => {
       setError('Please complete the captcha verification');
       return;
     }
+    if (!profilePhoto) {
+      setError('Profile photo is required');
+      return;
+    }
     try {
-      const registrationData = { ...formData };
+      const registrationData = new FormData();
+      registrationData.append('name', formData.name);
+      registrationData.append('email', formData.email);
+      registrationData.append('password', formData.password);
       if (isCsrRegistration && csrCode) {
-        registrationData.csrCode = csrCode;
+        registrationData.append('csrCode', csrCode);
+      }
+      if (profilePhoto) {
+        registrationData.append('profilePhoto', profilePhoto);
       }
       
-      const { data } = await authAPI.register(registrationData);
+      const { data } = await authAPI.register(registrationData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       login(data.token, data.user);
       
       if (data.message) {
@@ -124,6 +137,28 @@ const Register = () => {
                 {showPassword ? '👁️' : '👁️🗨️'}
               </button>
             </div>
+          </div>
+
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Profile Photo *
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file && file.size > 5 * 1024 * 1024) {
+                  alert('File size must be less than 5MB');
+                  return;
+                }
+                setProfilePhoto(file);
+              }}
+              style={styles.fileInput}
+            />
+            {profilePhoto && (
+              <div style={styles.filePreview}>
+                Selected: {profilePhoto.name}
+              </div>
+            )}
           </div>
 
           <div style={styles.captchaContainer}>
