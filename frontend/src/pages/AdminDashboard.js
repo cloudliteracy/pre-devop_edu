@@ -584,24 +584,24 @@ const AdminDashboard = () => {
             <div style={styles.statsGrid}>
               <div style={styles.statCard}>
                 <div style={styles.statIcon}>👥</div>
-                <div style={styles.statValue}>{stats.totalUsers}</div>
+                <div style={styles.statValue}>{stats?.totalUsers ?? '-'}</div>
                 <div style={styles.statLabel}>Total Users</div>
               </div>
               <div style={styles.statCard}>
                 <div style={styles.statIcon}>📚</div>
-                <div style={styles.statValue}>{stats.totalEnrollments}</div>
+                <div style={styles.statValue}>{stats?.totalEnrollments ?? '-'}</div>
                 <div style={styles.statLabel}>Enrollments</div>
               </div>
               {currentUser?.isSuperAdmin && (
                 <div style={styles.statCard}>
                   <div style={styles.statIcon}>💰</div>
-                  <div style={styles.statValue}>${stats.totalRevenue}</div>
+                  <div style={styles.statValue}>${stats?.totalRevenue ?? '-'}</div>
                   <div style={styles.statLabel}>Total Revenue</div>
                 </div>
               )}
               <div style={styles.statCard}>
                 <div style={styles.statIcon}>📊</div>
-                <div style={styles.statValue}>{stats.avgCompletion}%</div>
+                <div style={styles.statValue}>{stats?.avgCompletion ?? '-'}%</div>
                 <div style={styles.statLabel}>Avg Completion</div>
               </div>
               <div style={{...styles.statCard, gridColumn: 'span 2'}}>

@@ -64,11 +64,7 @@ const FeaturedTestimonials = () => {
           </div>
         ))}
       </div>
-      <div style={styles.linkContainer}>
-        <Link to="/testimonials" style={styles.link}>
-          View All Testimonials →
-        </Link>
-      </div>
+
     </div>
   );
 };
