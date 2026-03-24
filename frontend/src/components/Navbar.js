@@ -57,6 +57,16 @@ const Navbar = () => {
           >
             Polls
           </Link>
+          {isAuthenticated && user?.role !== 'admin' && !user?.isSuperAdmin && (
+            <Link 
+              to="/vouchers" 
+              style={getLinkStyle('vouchers')}
+              onMouseEnter={() => setHoveredLink('vouchers')}
+              onMouseLeave={() => setHoveredLink(null)}
+            >
+              🎓 AWS Vouchers
+            </Link>
+          )}
           {user && (user.role === 'admin' || user.isSuperAdmin) && (user.isSuperAdmin || user.canManageAnnouncements) && (
             <Link 
               to="/announcements-management" 

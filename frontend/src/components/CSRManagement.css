@@ -176,6 +176,14 @@
   letter-spacing: 2px;
 }
 
+.csr-code-name {
+  color: #4CAF50;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 8px;
+  font-style: italic;
+}
+
 .csr-code-actions {
   display: flex;
   gap: 10px;
@@ -266,28 +274,97 @@
   margin-bottom: 20px;
 }
 
-.csr-user-item {
+.csr-users-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.csr-users-table thead {
   background: #000;
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 15px;
-  margin-bottom: 10px;
+}
+
+.csr-users-table th {
+  color: #FFD700;
+  padding: 12px;
+  text-align: left;
+  border-bottom: 2px solid #FFD700;
+  font-weight: bold;
+}
+
+.csr-users-table td {
+  color: #fff;
+  padding: 15px 12px;
+  border-bottom: 1px solid #333;
+}
+
+.csr-users-table tbody tr:hover {
+  background: rgba(255, 215, 0, 0.05);
+}
+
+.csr-user-actions {
   display: flex;
-  justify-content: space-between;
+  gap: 10px;
   align-items: center;
 }
 
-.csr-user-info {
+.renew-select {
+  padding: 8px 12px;
+  background: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.renew-select option[value="-2"],
+.renew-select option[value="-1"] {
+  background: #ff4444;
   color: #fff;
 }
 
-.csr-user-info strong {
-  color: #FFD700;
+.renew-select option[value="3"],
+.renew-select option[value="6"],
+.renew-select option[value="12"] {
+  background: #4CAF50;
+  color: #fff;
 }
 
-.csr-user-date {
-  color: #999;
-  font-size: 12px;
+.renew-select:hover {
+  background: #45a049;
+}
+
+.expel-btn {
+  padding: 8px 16px;
+  background: #8B0000;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.expel-btn:hover {
+  background: #ff0000;
+  transform: translateY(-2px);
+}
+
+.suspend-csr-btn {
+  padding: 8px 16px;
+  background: #ff9800;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.suspend-csr-btn:hover {
+  background: #f57c00;
+  transform: translateY(-2px);
 }
 
 @media (max-width: 768px) {
@@ -302,5 +379,25 @@
 
   .csr-code-value {
     font-size: 18px;
+  }
+
+  .csr-users-table {
+    font-size: 12px;
+  }
+
+  .csr-users-table th,
+  .csr-users-table td {
+    padding: 8px 6px;
+  }
+
+  .csr-user-actions {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .renew-select,
+  .expel-btn {
+    width: 100%;
+    font-size: 11px;
   }
 }

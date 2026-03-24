@@ -42,6 +42,16 @@ A full-stack educational platform for pre-DevOps learning with payment integrati
 - Admin status monitoring and management
 - Super admin cannot be suspended
 
+### AWS Exam Vouchers System (Super Admin Only)
+- Encrypted voucher storage with AES-256 encryption
+- Single and bulk voucher upload (CSV/Excel)
+- Assign vouchers to learners
+- Voucher lifecycle tracking (unused → assigned → redeemed → expired)
+- Automated expiration via daily cron job
+- Complete audit trail with activity logs
+- Learner redemption interface with instructions
+- Support for 6 AWS certification exams
+
 ### Additional Pages
 - About Us page with mission and vision
 - Contact Us page with form submission
@@ -144,6 +154,9 @@ EMAIL_USER=your_email@gmail.com
 EMAIL_PASSWORD=your_16_character_app_password
 EMAIL_FROM=CloudLiteracy <your_email@gmail.com>
 
+# Voucher Encryption (Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+VOUCHER_ENCRYPTION_KEY=your_64_character_hex_string_here
+
 # Frontend URL
 FRONTEND_URL=http://localhost:3000
 ```
@@ -227,32 +240,51 @@ Frontend runs on: http://localhost:3000
 - GET `/api/admin/admins` - Get all admins (super admin only)
 - PUT `/api/admin/admins/:id/toggle-suspension` - Suspend/reinstate admin (super admin only)
 
+### AWS Exam Vouchers
+**Super Admin Only:**
+- POST `/api/vouchers/upload-single` - Upload single voucher
+- POST `/api/vouchers/upload-bulk` - Bulk upload (CSV/Excel)
+- GET `/api/vouchers/all` - Get all vouchers
+- POST `/api/vouchers/assign` - Assign voucher to user
+- POST `/api/vouchers/:id/revoke` - Revoke voucher
+
+**All Admins:**
+- GET `/api/vouchers/stats` - Get statistics
+- GET `/api/vouchers/activity-logs` - Get activity logs
+
+**Learners:**
+- GET `/api/vouchers/my-vouchers` - Get assigned vouchers
+- POST `/api/vouchers/:id/redeem` - Mark voucher as redeemed
+
 ## Project Structure
 
 ```
 cloudliteracy_edu/
 ├── backend/
 │   ├── config/          # Database configuration
-│   ├── models/          # Mongoose schemas (User, Module, Payment, Rating, Progress)
-│   ├── routes/          # API routes (auth, modules, payments, quiz, ratings, admin, progress)
+│   ├── models/          # Mongoose schemas (User, Module, Payment, Rating, Progress, Voucher, VoucherActivityLog)
+│   ├── routes/          # API routes (auth, modules, payments, quiz, ratings, admin, progress, vouchers)
 │   ├── controllers/     # Business logic
 │   ├── middleware/      # Auth & admin access control
 │   ├── services/        # Email service
+│   ├── utils/           # Encryption utilities
 │   ├── server.js        # Entry point with Socket.io
+│   ├── cronJobs.js      # Automated tasks (voucher expiration)
 │   ├── seedModules.js   # Database seeding script
 │   ├── updateSuperAdmin.js  # Super admin setup script
 │   └── .env.example     # Environment variables template
 ├── frontend/
 │   ├── public/
 │   └── src/
-│       ├── components/  # Navbar, Footer, DonateModal, ProgressBar
-│       ├── pages/       # Home, Login, Register, ModuleList, ModuleDetail, AdminDashboard, etc.
+│       ├── components/  # Navbar, Footer, DonateModal, ProgressBar, VoucherManagement
+│       ├── pages/       # Home, Login, Register, ModuleList, ModuleDetail, AdminDashboard, Vouchers, etc.
 │       ├── services/    # API services (auth, modules, payments, ratings, socket)
 │       ├── context/     # AuthContext for user state management
 │       └── App.js       # Main app with routing
 └── uploads/             # Content storage
     ├── pdfs/
-    └── videos/
+    ├── videos/
+    └── vouchers/        # Bulk upload files
 ```
 
 ## Getting Started

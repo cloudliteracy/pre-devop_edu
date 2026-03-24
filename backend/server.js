@@ -19,6 +19,8 @@ const pollRoutes = require('./routes/polls');
 const contentRoutes = require('./routes/content');
 const announcementRoutes = require('./routes/announcements');
 const csrRoutes = require('./routes/csr');
+const voucherRoutes = require('./routes/vouchers');
+const { startVoucherExpirationCron } = require('./cronJobs');
 
 const app = express();
 const server = http.createServer(app);
@@ -49,6 +51,7 @@ app.use('/api/polls', pollRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/csr', csrRoutes);
+app.use('/api/vouchers', voucherRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'CloudLiteracy API Server' });
@@ -130,4 +133,7 @@ module.exports.io = io;
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  
+  // Start cron jobs
+  startVoucherExpirationCron();
 });

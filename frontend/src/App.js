@@ -20,6 +20,7 @@ import ResetPassword from './pages/ResetPassword';
 import Chat from './pages/Chat';
 import Polls from './pages/Polls';
 import Announcements from './pages/Announcements';
+import Vouchers from './pages/Vouchers';
 import socketService from './services/socket';
 
 function AppContent() {
@@ -41,11 +42,21 @@ function AppContent() {
           window.location.href = '/login';
         }
       });
+
+      // Listen for user suspension
+      socketService.onUserSuspended((data) => {
+        if (data.email === user.email) {
+          alert('Your account has been suspended by the administrator. You will be logged out.');
+          logout();
+          window.location.href = '/login';
+        }
+      });
     }
 
     return () => {
       if (user) {
         socketService.offAdminSuspended();
+        socketService.offUserSuspended();
         socketService.disconnect();
       }
     };
@@ -66,6 +77,7 @@ function AppContent() {
           <Route path="/payment/cancel" element={<PaymentCancel />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/polls" element={<Polls />} />
+          <Route path="/vouchers" element={<Vouchers />} />
           <Route path="/announcements-management" element={<Announcements />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/contact" element={<ContactUs />} />

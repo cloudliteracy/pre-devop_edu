@@ -94,6 +94,7 @@ exports.getAllUsers = async (req, res) => {
       return {
         ...user.toObject(),
         overallProgress,
+        isSuspended: user.isSuspended,
         moduleProgress: userProgress.map(p => ({
           moduleId: p.moduleId?._id,
           moduleTitle: p.moduleId?.title,
@@ -581,5 +582,185 @@ exports.getSurveyAnalytics = async (req, res) => {
     res.json(polls);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch survey analytics', error: error.message });
+  }
+};
+
+// Query users with filters (Admin only)
+exports.queryUsers = async (req, res) => {
+  try {
+    const { name, email, role, isCsrUser, dateFrom, dateTo, hasPurchased, completionRange } = req.body;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    // Build query object
+    let query = { role: 'user' };
+
+    // Text search filters
+    if (name) {
+      query.name = { $regex: name, $options: 'i' };
+    }
+    if (email) {
+      query.email = { $regex: email, $options: 'i' };
+    }
+
+    // Role filter
+    if (role && role !== 'all') {
+      query.role = role;
+    }
+
+    // CSR user filter
+    if (isCsrUser !== undefined && isCsrUser !== 'all') {
+      query.isCsrUser = isCsrUser === 'yes';
+    }
+
+    // Date range filter
+    if (dateFrom || dateTo) {
+      query.createdAt = {};
+      if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+      if (dateTo) query.createdAt.$lte = new Date(dateTo);
+    }
+
+    // Has purchased modules filter
+    if (hasPurchased && hasPurchased !== 'all') {
+      if (hasPurchased === 'yes') {
+        query.purchasedModules = { $exists: true, $ne: [] };
+      } else {
+        query.purchasedModules = { $size: 0 };
+      }
+    }
+
+    // Execute query
+    const users = await User.find(query)
+      .select('name email role isCsrUser purchasedModules createdAt')
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    // Get progress data for completion filter
+    const usersWithProgress = await Promise.all(users.map(async (user) => {
+      const userProgress = await Progress.find({ userId: user._id });
+      
+      let totalProgress = 0;
+      if (userProgress.length > 0) {
+        totalProgress = userProgress.reduce((sum, p) => sum + (p.completionPercentage || 0), 0) / userProgress.length;
+      }
+
+      return {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isCsrUser: user.isCsrUser,
+        purchasedModules: user.purchasedModules.length,
+        overallProgress: Math.round(totalProgress),
+        createdAt: user.createdAt
+      };
+    }));
+
+    // Apply completion range filter
+    let filteredUsers = usersWithProgress;
+    if (completionRange && completionRange !== 'all') {
+      if (completionRange === 'low') {
+        filteredUsers = usersWithProgress.filter(u => u.overallProgress < 30);
+      } else if (completionRange === 'medium') {
+        filteredUsers = usersWithProgress.filter(u => u.overallProgress >= 30 && u.overallProgress < 70);
+      } else if (completionRange === 'high') {
+        filteredUsers = usersWithProgress.filter(u => u.overallProgress >= 70);
+      }
+    }
+
+    const total = await User.countDocuments(query);
+
+    res.json({
+      users: filteredUsers,
+      total,
+      page,
+      pages: Math.ceil(total / limit)
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to query users', error: error.message });
+  }
+};
+
+// Suspend/Unsuspend user (Super Admin only)
+exports.suspendUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const requestingUser = req.user;
+
+    if (!requestingUser.isSuperAdmin) {
+      return res.status(403).json({ message: 'Only super admin can suspend users' });
+    }
+
+    const targetUser = await User.findById(id);
+
+    if (!targetUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (targetUser.role === 'admin' || targetUser.isSuperAdmin) {
+      return res.status(403).json({ message: 'Cannot suspend admin users' });
+    }
+
+    targetUser.isSuspended = !targetUser.isSuspended;
+    await targetUser.save();
+
+    // If suspending, force logout the user via socket
+    if (targetUser.isSuspended) {
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('user-suspended', { email: targetUser.email });
+        console.log('Emitted user-suspended event for:', targetUser.email);
+      }
+    }
+
+    res.json({
+      message: `User ${targetUser.isSuspended ? 'suspended' : 'unsuspended'} successfully`,
+      user: {
+        id: targetUser._id,
+        name: targetUser.name,
+        email: targetUser.email,
+        isSuspended: targetUser.isSuspended
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to suspend user', error: error.message });
+  }
+};
+
+// Delete user (Super Admin only)
+exports.deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const requestingUser = req.user;
+
+    if (!requestingUser.isSuperAdmin) {
+      return res.status(403).json({ message: 'Only super admin can delete users' });
+    }
+
+    const targetUser = await User.findById(id);
+
+    if (!targetUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (targetUser.role === 'admin' || targetUser.isSuperAdmin) {
+      return res.status(403).json({ message: 'Cannot delete admin users' });
+    }
+
+    // Force logout the user via socket before deletion
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('user-suspended', { email: targetUser.email });
+    }
+
+    await User.findByIdAndDelete(id);
+
+    res.json({
+      message: 'User deleted permanently'
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to delete user', error: error.message });
   }
 };

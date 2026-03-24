@@ -58,6 +58,18 @@ class SocketService {
     }
   }
 
+  onUserSuspended(callback) {
+    if (this.socket) {
+      this.socket.on('user-suspended', callback);
+    }
+  }
+
+  offUserSuspended() {
+    if (this.socket) {
+      this.socket.off('user-suspended');
+    }
+  }
+
   onNewComment(callback) {
     if (this.socket) {
       this.socket.on('new-comment', callback);

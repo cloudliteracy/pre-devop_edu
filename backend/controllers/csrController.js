@@ -16,19 +16,21 @@ exports.generateCode = async (req, res) => {
       return res.status(403).json({ message: 'Only super admin can generate CSR codes' });
     }
 
-    const { expiresAt, maxUses } = req.body;
+    const { codeName, expiresAt, maxUses, accessDurationMonths } = req.body;
 
-    if (!expiresAt || !maxUses) {
-      return res.status(400).json({ message: 'Expiration date and max uses are required' });
+    if (!codeName || !expiresAt || !maxUses || !accessDurationMonths) {
+      return res.status(400).json({ message: 'Code name, expiration date, max uses, and access duration are required' });
     }
 
     const code = generateUniqueCode();
 
     const csrCode = new CSRCode({
       code,
+      codeName,
       createdBy: req.user._id,
       expiresAt: new Date(expiresAt),
-      maxUses: parseInt(maxUses)
+      maxUses: parseInt(maxUses),
+      accessDurationMonths: parseInt(accessDurationMonths)
     });
 
     await csrCode.save();
@@ -148,7 +150,7 @@ exports.getAnalytics = async (req, res) => {
     });
 
     const recentCsrUsers = await User.find({ isCsrUser: true })
-      .select('name email createdAt')
+      .select('name email createdAt csrAccessExpiresAt isSuspended')
       .sort({ createdAt: -1 })
       .limit(10);
 
@@ -187,5 +189,86 @@ exports.deleteCode = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to delete code', error: error.message });
+  }
+};
+
+// Renew CSR user access (Super Admin only)
+exports.renewCsrAccess = async (req, res) => {
+  try {
+    if (!req.user.isSuperAdmin) {
+      return res.status(403).json({ message: 'Only super admin can renew CSR access' });
+    }
+
+    const { userId } = req.params;
+    const { months } = req.body;
+
+    if (months === undefined || months === null || months === 0) {
+      return res.status(400).json({ message: 'Valid extension/reduction period required' });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user || !user.isCsrUser) {
+      return res.status(404).json({ message: 'CSR user not found' });
+    }
+
+    const currentExpiry = user.csrAccessExpiresAt || new Date();
+    const newExpiry = new Date(Math.max(currentExpiry, new Date()));
+    newExpiry.setMonth(newExpiry.getMonth() + parseInt(months));
+
+    // Prevent setting expiration in the past
+    const now = new Date();
+    if (newExpiry < now) {
+      user.csrAccessExpiresAt = now; // Set to current time (immediate expiry)
+    } else {
+      user.csrAccessExpiresAt = newExpiry;
+    }
+
+    user.csrAccessRenewedBy = req.user._id;
+    user.csrAccessRenewedAt = new Date();
+    await user.save();
+
+    const action = months > 0 ? 'extended' : 'reduced';
+    const absMonths = Math.abs(months);
+
+    res.json({
+      message: `CSR access ${action} by ${absMonths} month(s)`,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        csrAccessExpiresAt: user.csrAccessExpiresAt
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to renew access', error: error.message });
+  }
+};
+
+// Expel CSR user (Super Admin only)
+exports.expelCsrUser = async (req, res) => {
+  try {
+    if (!req.user.isSuperAdmin) {
+      return res.status(403).json({ message: 'Only super admin can expel users' });
+    }
+
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!user.isCsrUser) {
+      return res.status(400).json({ message: 'User is not a CSR user' });
+    }
+
+    await User.findByIdAndDelete(userId);
+
+    res.json({
+      message: 'CSR user expelled successfully'
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to expel user', error: error.message });
   }
 };

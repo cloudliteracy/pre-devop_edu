@@ -37,6 +37,9 @@ exports.register = async (req, res) => {
 
       userData.isCsrUser = true;
       userData.csrCodeUsed = code._id;
+      // Set expiration based on code's accessDurationMonths
+      const durationMs = (code.accessDurationMonths || 12) * 30 * 24 * 60 * 60 * 1000;
+      userData.csrAccessExpiresAt = new Date(Date.now() + durationMs);
 
       const user = new User(userData);
       await user.save();
@@ -57,7 +60,7 @@ exports.register = async (req, res) => {
           role: user.role,
           isCsrUser: user.isCsrUser
         },
-        message: 'CSR registration successful! You now have free access to all modules.'
+        message: `CSR registration successful! You now have free access to all modules for ${code.accessDurationMonths} months.`
       });
     }
 

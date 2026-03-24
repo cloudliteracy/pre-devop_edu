@@ -7,6 +7,10 @@ const csrCodeSchema = new mongoose.Schema({
     unique: true,
     uppercase: true
   },
+  codeName: {
+    type: String,
+    required: true
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -20,6 +24,12 @@ const csrCodeSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 1
+  },
+  accessDurationMonths: {
+    type: Number,
+    required: true,
+    min: 1,
+    default: 12
   },
   currentUses: {
     type: Number,

@@ -19,5 +19,8 @@ router.get('/quiz-analytics/export', auth, adminAuth, adminController.exportQuiz
 router.put('/admins/:id/toggle-analytics-access', auth, adminAuth, adminController.toggleQuizAnalyticsAccess);
 router.put('/admins/:id/toggle-survey-analytics-access', auth, adminAuth, adminController.toggleSurveyAnalyticsAccess);
 router.get('/survey-analytics', auth, adminAuth, adminController.getSurveyAnalytics);
+router.post('/users/query', auth, adminAuth, adminController.queryUsers);
+router.put('/users/:id/suspend', auth, adminAuth, adminController.suspendUser);
+router.delete('/users/:id/delete', auth, adminAuth, adminController.deleteUser);
 
 module.exports = router;

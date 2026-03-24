@@ -7,6 +7,8 @@ import QuizAnalytics from '../components/QuizAnalytics';
 import SurveyAnalytics from '../components/SurveyAnalytics';
 import AnnouncementBar from '../components/AnnouncementBar';
 import CSRManagement from '../components/CSRManagement';
+import UserQuery from '../components/UserQuery';
+import VoucherManagement from '../components/VoucherManagement';
 import * as contentService from '../services/content';
 import * as adminService from '../services/admin';
 
@@ -30,6 +32,7 @@ const AdminDashboard = () => {
   const [adminMessage, setAdminMessage] = useState({ text: '', type: '' });
   const [currentUser, setCurrentUser] = useState(null);
   const [surveys, setSurveys] = useState([]);
+  const [userActionMessage, setUserActionMessage] = useState({ text: '', type: '' });
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -312,6 +315,48 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleSuspendUser = async (userId, userName, isSuspended) => {
+    const action = isSuspended ? 'unsuspend' : 'suspend';
+    if (!window.confirm(`Are you sure you want to ${action} user "${userName}"?`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const { data } = await axios.put(`http://localhost:5000/api/admin/users/${userId}/suspend`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setUserActionMessage({ text: data.message, type: 'success' });
+      fetchDashboardData();
+    } catch (error) {
+      setUserActionMessage({ 
+        text: error.response?.data?.message || 'Failed to suspend user', 
+        type: 'error' 
+      });
+    }
+  };
+
+  const handleDeleteUser = async (userId, userName) => {
+    if (!window.confirm(`⚠️ PERMANENTLY DELETE USER: ${userName}\n\nThis will:\n- Delete user account completely\n- Remove all progress data\n- Remove all payment records\n- This action CANNOT be undone!\n\nAre you absolutely sure?`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const { data } = await axios.delete(`http://localhost:5000/api/admin/users/${userId}/delete`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setUserActionMessage({ text: data.message, type: 'success' });
+      fetchDashboardData();
+    } catch (error) {
+      setUserActionMessage({ 
+        text: error.response?.data?.message || 'Failed to delete user', 
+        type: 'error' 
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div style={styles.loadingContainer}>
@@ -320,6 +365,29 @@ const AdminDashboard = () => {
       </div>
     );
   }
+
+  const tableHeaderStyle = {
+    display: 'grid',
+    gridTemplateColumns: currentUser?.isSuperAdmin ? '1.5fr 2fr 0.8fr 0.8fr 1fr 0.8fr 1.5fr 0.8fr' : '1.5fr 2fr 0.8fr 0.8fr 1fr 0.8fr 0.8fr',
+    gap: '15px',
+    padding: '15px',
+    backgroundColor: '#0d0d0d',
+    borderRadius: '10px',
+    fontWeight: 'bold',
+    color: '#FFD700'
+  };
+
+  const tableRowStyle = {
+    display: 'grid',
+    gridTemplateColumns: currentUser?.isSuperAdmin ? '1.5fr 2fr 0.8fr 0.8fr 1fr 0.8fr 1.5fr 0.8fr' : '1.5fr 2fr 0.8fr 0.8fr 1fr 0.8fr 0.8fr',
+    gap: '15px',
+    padding: '15px',
+    backgroundColor: '#0d0d0d',
+    borderRadius: '10px',
+    border: '1px solid #333',
+    color: '#ccc',
+    alignItems: 'center'
+  };
 
   return (
     <div style={styles.container}>
@@ -439,6 +507,28 @@ const AdminDashboard = () => {
               🎓 CSR Management
             </button>
           )}
+          <button
+            onClick={() => setActiveTab('userQuery')}
+            style={{
+              ...styles.tab,
+              backgroundColor: activeTab === 'userQuery' ? '#FFD700' : '#1a1a1a',
+              color: activeTab === 'userQuery' ? '#000' : '#FFD700'
+            }}
+          >
+            🔍 User Query
+          </button>
+          {currentUser?.isSuperAdmin && (
+            <button
+              onClick={() => setActiveTab('voucherManagement')}
+              style={{
+                ...styles.tab,
+                backgroundColor: activeTab === 'voucherManagement' ? '#FFD700' : '#1a1a1a',
+                color: activeTab === 'voucherManagement' ? '#000' : '#FFD700'
+              }}
+            >
+              🎓 Voucher Management
+            </button>
+          )}
         </div>
 
         {/* Overview Tab */}
@@ -455,11 +545,13 @@ const AdminDashboard = () => {
                 <div style={styles.statValue}>{stats.totalEnrollments}</div>
                 <div style={styles.statLabel}>Enrollments</div>
               </div>
-              <div style={styles.statCard}>
-                <div style={styles.statIcon}>💰</div>
-                <div style={styles.statValue}>${stats.totalRevenue}</div>
-                <div style={styles.statLabel}>Total Revenue</div>
-              </div>
+              {currentUser?.isSuperAdmin && (
+                <div style={styles.statCard}>
+                  <div style={styles.statIcon}>💰</div>
+                  <div style={styles.statValue}>${stats.totalRevenue}</div>
+                  <div style={styles.statLabel}>Total Revenue</div>
+                </div>
+              )}
               <div style={styles.statCard}>
                 <div style={styles.statIcon}>📊</div>
                 <div style={styles.statValue}>{stats.avgCompletion}%</div>
@@ -539,18 +631,30 @@ const AdminDashboard = () => {
         {activeTab === 'users' && (
           <div style={styles.section}>
             <h2 style={styles.sectionTitle}>User Management</h2>
+            
+            {userActionMessage.text && (
+              <div style={{
+                ...styles.message,
+                backgroundColor: userActionMessage.type === 'success' ? '#4CAF50' : '#ff4444',
+                marginBottom: '20px'
+              }}>
+                {userActionMessage.text}
+              </div>
+            )}
+
             <div style={styles.table}>
-              <div style={styles.tableHeader}>
+              <div style={tableHeaderStyle}>
                 <div style={styles.tableCell}>Name</div>
                 <div style={styles.tableCell}>Email</div>
                 <div style={styles.tableCell}>Modules</div>
                 <div style={styles.tableCell}>Progress</div>
                 <div style={styles.tableCell}>Joined</div>
-                <div style={styles.tableCell}>Actions</div>
+                <div style={styles.tableCell}>Status</div>
+                {currentUser?.isSuperAdmin && <div style={styles.tableCell}>Actions</div>}
               </div>
               {users.map((user) => (
                 <React.Fragment key={user._id}>
-                  <div style={styles.tableRow}>
+                  <div style={tableRowStyle}>
                     <div style={styles.tableCell}>{user.name}</div>
                     <div style={styles.tableCell}>{user.email}</div>
                     <div style={styles.tableCell}>{user.purchasedModules.length}</div>
@@ -565,6 +669,37 @@ const AdminDashboard = () => {
                     <div style={styles.tableCell}>
                       {new Date(user.createdAt).toLocaleDateString()}
                     </div>
+                    <div style={styles.tableCell}>
+                      {user.isSuspended ? (
+                        <span style={styles.suspendedBadge}>SUSPENDED</span>
+                      ) : (
+                        <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>Active</span>
+                      )}
+                    </div>
+                    {currentUser?.isSuperAdmin && (
+                      <div style={styles.tableCell}>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <button 
+                            onClick={() => handleSuspendUser(user._id, user.name, user.isSuspended)}
+                            style={{
+                              ...styles.actionButton,
+                              backgroundColor: user.isSuspended ? '#4CAF50' : '#ff9800'
+                            }}
+                          >
+                            {user.isSuspended ? 'Unsuspend' : 'Suspend'}
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteUser(user._id, user.name)}
+                            style={{
+                              ...styles.actionButton,
+                              backgroundColor: '#8B0000'
+                            }}
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     <div style={styles.tableCell}>
                       <button 
                         onClick={() => toggleUserDetails(user._id)}
@@ -635,10 +770,12 @@ const AdminDashboard = () => {
                       <span style={styles.analyticsLabel}>Enrollments</span>
                       <span style={styles.analyticsValue}>{module.enrollments}</span>
                     </div>
-                    <div style={styles.analyticsStat}>
-                      <span style={styles.analyticsLabel}>Revenue</span>
-                      <span style={styles.analyticsValue}>${module.revenue}</span>
-                    </div>
+                    {currentUser?.isSuperAdmin && (
+                      <div style={styles.analyticsStat}>
+                        <span style={styles.analyticsLabel}>Revenue</span>
+                        <span style={styles.analyticsValue}>${module.revenue}</span>
+                      </div>
+                    )}
                     <div style={styles.analyticsStat}>
                       <span style={styles.analyticsLabel}>Avg Completion</span>
                       <span style={styles.analyticsValue}>{module.avgCompletion}%</span>
@@ -961,6 +1098,16 @@ const AdminDashboard = () => {
           <CSRManagement user={currentUser} />
         )}
 
+        {/* User Query Tab */}
+        {activeTab === 'userQuery' && (
+          <UserQuery />
+        )}
+
+        {/* Voucher Management Tab */}
+        {activeTab === 'voucherManagement' && currentUser?.isSuperAdmin && (
+          <VoucherManagement />
+        )}
+
         {/* Create Admin Modal */}
         {showCreateAdminModal && (
           <div style={styles.modalOverlay} onClick={closeCreateAdminModal}>
@@ -1198,27 +1345,6 @@ const styles = {
     flexDirection: 'column',
     gap: '10px'
   },
-  tableHeader: {
-    display: 'grid',
-    gridTemplateColumns: '1.5fr 2fr 0.8fr 0.8fr 1fr 0.8fr',
-    gap: '15px',
-    padding: '15px',
-    backgroundColor: '#0d0d0d',
-    borderRadius: '10px',
-    fontWeight: 'bold',
-    color: '#FFD700'
-  },
-  tableRow: {
-    display: 'grid',
-    gridTemplateColumns: '1.5fr 2fr 0.8fr 0.8fr 1fr 0.8fr',
-    gap: '15px',
-    padding: '15px',
-    backgroundColor: '#0d0d0d',
-    borderRadius: '10px',
-    border: '1px solid #333',
-    color: '#ccc',
-    alignItems: 'center'
-  },
   tableCell: {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -1278,6 +1404,17 @@ const styles = {
     fontWeight: 'bold',
     cursor: 'pointer',
     transition: 'all 0.3s'
+  },
+  actionButton: {
+    padding: '6px 12px',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: 'all 0.3s',
+    whiteSpace: 'nowrap'
   },
   expandedRow: {
     gridColumn: '1 / -1',
