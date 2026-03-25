@@ -42,6 +42,7 @@ const PartnerManagement = () => {
           <div style={styles.tableHeader}>
             <div style={styles.cell}>Name</div>
             <div style={styles.cell}>Email</div>
+            <div style={styles.cell}>Country</div>
             <div style={styles.cell}>Tier</div>
             <div style={styles.cell}>Lifetime Access Code</div>
             <div style={styles.cell}>Joined</div>
@@ -50,6 +51,7 @@ const PartnerManagement = () => {
             <div key={partner._id} style={styles.tableRow}>
               <div style={styles.cell}>{partner.name}</div>
               <div style={styles.cell}>{partner.email}</div>
+              <div style={styles.cell}>{partner.country || 'N/A'}</div>
               <div style={styles.cell}>
                 <span style={{
                   ...styles.tierBadge,
@@ -98,7 +100,7 @@ const styles = {
   },
   tableHeader: {
     display: 'grid',
-    gridTemplateColumns: '2fr 2fr 1fr 2fr 1.5fr',
+    gridTemplateColumns: '1.5fr 2fr 1fr 0.8fr 1.5fr 1fr',
     padding: '15px',
     backgroundColor: '#0d0d0d',
     borderRadius: '8px',
@@ -107,7 +109,7 @@ const styles = {
   },
   tableRow: {
     display: 'grid',
-    gridTemplateColumns: '2fr 2fr 1fr 2fr 1.5fr',
+    gridTemplateColumns: '1.5fr 2fr 1fr 0.8fr 1.5fr 1fr',
     padding: '15px',
     backgroundColor: '#0d0d0d',
     borderRadius: '8px',

@@ -15,6 +15,8 @@ const PartnerPackages = () => {
   const [selectedTier, setSelectedTier] = useState(null);
   const [formData, setFormData] = useState({ name: '', email: '', password: '', country: '' });
   const [profilePhoto, setProfilePhoto] = useState(null);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [draggedText, setDraggedText] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, isAuthenticated } = useContext(AuthContext);
@@ -25,6 +27,23 @@ const PartnerPackages = () => {
     setError('');
   };
 
+  const handleDragStart = (e) => {
+    e.dataTransfer.setData('text', 'cloudliteracy');
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const text = e.dataTransfer.getData('text');
+    if (text === 'cloudliteracy') {
+      setDraggedText(text);
+      setCaptchaVerified(true);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
   const closeModal = () => {
     setSelectedTier(null);
     setError('');
@@ -32,9 +51,15 @@ const PartnerPackages = () => {
 
   const handleRegisterAndCheckout = async (e) => {
     e.preventDefault();
-    if (!profilePhoto && !isAuthenticated) {
-      setError('Profile photo is required for new accounts.');
-      return;
+    if (!isAuthenticated) {
+      if (!captchaVerified) {
+        setError('Please complete the captcha verification');
+        return;
+      }
+      if (!profilePhoto) {
+        setError('Profile photo is required for new accounts.');
+        return;
+      }
     }
 
     setLoading(true);
@@ -171,7 +196,38 @@ const PartnerPackages = () => {
                       required
                       style={styles.fileInput}
                     />
+                    {profilePhoto && (
+                      <div style={styles.filePreview}>
+                        <img src={URL.createObjectURL(profilePhoto)} alt="Preview" style={styles.imagePreview} />
+                        <span style={{ color: '#ccc', marginLeft: '10px' }}>Selected: {profilePhoto.name}</span>
+                      </div>
+                    )}
                   </div>
+
+                  <div style={styles.captchaContainer}>
+                    <p style={styles.captchaLabel}>Verify you're human:</p>
+                    <div style={styles.captchaBox}>
+                      <div
+                        draggable
+                        onDragStart={handleDragStart}
+                        style={styles.draggableText}
+                      >
+                        cloudliteracy
+                      </div>
+                      <div
+                        onDrop={handleDrop}
+                        onDragOver={handleDragOver}
+                        style={{
+                          ...styles.dropZone,
+                          backgroundColor: captchaVerified ? '#2d5016' : '#1a1a1a',
+                          border: captchaVerified ? '2px solid #FFD700' : '2px dashed #FFD700'
+                        }}
+                      >
+                        {captchaVerified ? '✓ Verified' : 'Drag "cloudliteracy" here'}
+                      </div>
+                    </div>
+                  </div>
+
                 </>
               )}
               {isAuthenticated && (
@@ -351,6 +407,58 @@ const styles = {
     color: '#ff4444',
     textAlign: 'center',
     marginBottom: '20px'
+  },
+  captchaContainer: {
+    marginBottom: '20px'
+  },
+  captchaLabel: {
+    color: '#ccc',
+    marginBottom: '8px',
+    fontSize: '14px'
+  },
+  captchaBox: {
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'center',
+    flexWrap: 'wrap'
+  },
+  draggableText: {
+    backgroundColor: '#FFD700',
+    color: '#000',
+    padding: '8px 15px',
+    borderRadius: '6px',
+    cursor: 'move',
+    fontWeight: 'bold',
+    userSelect: 'none',
+    fontSize: '14px'
+  },
+  dropZone: {
+    flex: 1,
+    padding: '10px',
+    borderRadius: '6px',
+    textAlign: 'center',
+    color: '#FFD700',
+    fontSize: '14px',
+    minHeight: '40px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  filePreview: {
+    display: 'flex',
+    alignItems: 'center',
+    marginTop: '10px',
+    padding: '8px',
+    backgroundColor: '#0d0d0d',
+    border: '1px solid #333',
+    borderRadius: '8px'
+  },
+  imagePreview: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    objectFit: 'cover',
+    border: '1px solid #FFD700'
   }
 };
 

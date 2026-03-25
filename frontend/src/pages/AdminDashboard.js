@@ -393,7 +393,7 @@ const AdminDashboard = () => {
 
   const tableHeaderStyle = {
     display: 'grid',
-    gridTemplateColumns: currentUser?.isSuperAdmin ? '1.5fr 2fr 0.8fr 0.8fr 1fr 0.8fr 1.5fr 0.8fr' : '1.5fr 2fr 0.8fr 0.8fr 1fr 0.8fr 0.8fr',
+    gridTemplateColumns: currentUser?.isSuperAdmin ? '1.5fr 2fr 1fr 0.8fr 0.8fr 1fr 0.8fr 1.5fr 0.8fr' : '1.5fr 2fr 1fr 0.8fr 0.8fr 1fr 0.8fr 0.8fr',
     gap: '15px',
     padding: '15px',
     backgroundColor: '#0d0d0d',
@@ -404,7 +404,7 @@ const AdminDashboard = () => {
 
   const tableRowStyle = {
     display: 'grid',
-    gridTemplateColumns: currentUser?.isSuperAdmin ? '1.5fr 2fr 0.8fr 0.8fr 1fr 0.8fr 1.5fr 0.8fr' : '1.5fr 2fr 0.8fr 0.8fr 1fr 0.8fr 0.8fr',
+    gridTemplateColumns: currentUser?.isSuperAdmin ? '1.5fr 2fr 1fr 0.8fr 0.8fr 1fr 0.8fr 1.5fr 0.8fr' : '1.5fr 2fr 1fr 0.8fr 0.8fr 1fr 0.8fr 0.8fr',
     gap: '15px',
     padding: '15px',
     backgroundColor: '#0d0d0d',
@@ -719,17 +719,20 @@ const AdminDashboard = () => {
               <div style={tableHeaderStyle}>
                 <div style={styles.tableCell}>Name</div>
                 <div style={styles.tableCell}>Email</div>
+                <div style={styles.tableCell}>Country</div>
                 <div style={styles.tableCell}>Modules</div>
                 <div style={styles.tableCell}>Progress</div>
                 <div style={styles.tableCell}>Joined</div>
                 <div style={styles.tableCell}>Status</div>
                 {currentUser?.isSuperAdmin && <div style={styles.tableCell}>Actions</div>}
+                <div style={styles.tableCell}>Details</div>
               </div>
               {users.map((user) => (
                 <React.Fragment key={user._id}>
                   <div style={tableRowStyle}>
                     <div style={styles.tableCell}>{user.name}</div>
                     <div style={styles.tableCell}>{user.email}</div>
+                    <div style={styles.tableCell}>{user.country || 'N/A'}</div>
                     <div style={styles.tableCell}>{user.purchasedModules.length}</div>
                     <div style={styles.tableCell}>
                       <div style={{
