@@ -42,9 +42,9 @@ const ModuleList = () => {
   };
 
   const isModuleLocked = (module) => {
-    // Admins can access all modules
+    // Admins and Partners can access all modules
     const currentUser = JSON.parse(localStorage.getItem('user'));
-    if (currentUser?.role === 'admin' || currentUser?.isSuperAdmin) {
+    if (currentUser?.role === 'admin' || currentUser?.role === 'partner' || currentUser?.isSuperAdmin) {
       return false;
     }
 
