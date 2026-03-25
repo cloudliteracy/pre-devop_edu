@@ -140,7 +140,7 @@ const Register = () => {
           </div>
 
           <div style={styles.inputGroup}>
-            <label style={styles.label}>Profile Photo *
+            <label style={styles.label}>Profile Photo *</label>
             <input
               type="file"
               accept="image/*"
