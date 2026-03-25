@@ -1201,6 +1201,11 @@ const AdminDashboard = () => {
           <TestimonialManagement />
         )}
 
+        {/* Partner Management Tab */}
+        {activeTab === 'partnerManagement' && (currentUser?.isSuperAdmin || currentUser?.role === 'admin') && (
+          <PartnerManagement />
+        )}
+
         {/* Create Admin Modal */}
         {showCreateAdminModal && (
           <div style={styles.modalOverlay} onClick={closeCreateAdminModal}>
