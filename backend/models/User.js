@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   profilePhoto: { type: String },
+  country: { type: String },
   role: { type: String, enum: ['user', 'admin', 'partner'], default: 'user' },
   partnerTier: { type: String, enum: ['Silver', 'Gold', 'Platinum', 'Diamond'] },
   partnerAccessCode: { type: String },

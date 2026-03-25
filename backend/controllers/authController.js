@@ -5,14 +5,14 @@ const { sendPasswordResetEmail } = require('../services/emailService');
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, csrCode } = req.body;
+    const { name, email, password, country, csrCode } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    const userData = { name, email, password };
+    const userData = { name, email, password, country };
 
     if (req.file) {
       userData.profilePhoto = `/` + req.file.path.replace(/\\/g, '/');
@@ -63,7 +63,8 @@ exports.register = async (req, res) => {
           email: user.email, 
           role: user.role,
           profilePhoto: user.profilePhoto,
-          isCsrUser: user.isCsrUser
+          isCsrUser: user.isCsrUser,
+          country: user.country
         },
         message: `CSR registration successful! You now have free access to all modules for ${code.accessDurationMonths} months.`
       });
@@ -74,7 +75,7 @@ exports.register = async (req, res) => {
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-    res.status(201).json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role, profilePhoto: user.profilePhoto } });
+    res.status(201).json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role, profilePhoto: user.profilePhoto, country: user.country } });
   } catch (error) {
     res.status(500).json({ message: 'Registration failed', error: error.message });
   }
@@ -104,7 +105,8 @@ exports.login = async (req, res) => {
         role: user.role,
         profilePhoto: user.profilePhoto,
         isSuperAdmin: user.isSuperAdmin,
-        mustChangePassword: user.mustChangePassword
+        mustChangePassword: user.mustChangePassword,
+        country: user.country
       } 
     });
   } catch (error) {
@@ -230,7 +232,8 @@ exports.updateProfilePhoto = async (req, res) => {
         role: user.role,
         profilePhoto: user.profilePhoto,
         isSuperAdmin: user.isSuperAdmin,
-        mustChangePassword: user.mustChangePassword
+        mustChangePassword: user.mustChangePassword,
+        country: user.country
       }
     });
   } catch (error) {

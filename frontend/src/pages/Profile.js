@@ -89,6 +89,10 @@ const Profile = () => {
             <span style={styles.label}>Account Type</span>
             <span style={styles.value}>{user.isCsrUser ? 'Corporate Social Responsibility (CSR)' : 'Standard User'}</span>
           </div>
+          <div style={styles.detailRow}>
+            <span style={styles.label}>Country</span>
+            <span style={styles.value}>{user.country || 'Not specified'}</span>
+          </div>
         </div>
       </div>
     </div>

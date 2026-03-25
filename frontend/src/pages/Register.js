@@ -4,7 +4,7 @@ import { authAPI } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 
 const Register = () => {
-  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', country: '' });
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [captchaVerified, setCaptchaVerified] = useState(false);
@@ -59,6 +59,7 @@ const Register = () => {
       registrationData.append('name', formData.name);
       registrationData.append('email', formData.email);
       registrationData.append('password', formData.password);
+      registrationData.append('country', formData.country);
       if (isCsrRegistration && csrCode) {
         registrationData.append('csrCode', csrCode);
       }
@@ -111,6 +112,18 @@ const Register = () => {
               placeholder="Enter your email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              required
+              style={styles.input}
+            />
+          </div>
+
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Country</label>
+            <input
+              type="text"
+              placeholder="Enter your country"
+              value={formData.country}
+              onChange={(e) => setFormData({ ...formData, country: e.target.value })}
               required
               style={styles.input}
             />
