@@ -632,7 +632,7 @@ exports.queryUsers = async (req, res) => {
 
     // Execute query
     const users = await User.find(query)
-      .select('name email role isCsrUser partnerTier partnerAccessCode purchasedModules createdAt')
+      .select('name email role isCsrUser country partnerTier partnerAccessCode purchasedModules createdAt')
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 });
@@ -652,6 +652,7 @@ exports.queryUsers = async (req, res) => {
         email: user.email,
         role: user.role,
         isCsrUser: user.isCsrUser,
+        country: user.country,
         partnerTier: user.partnerTier,
         partnerAccessCode: user.partnerAccessCode,
         purchasedModules: user.purchasedModules.length,

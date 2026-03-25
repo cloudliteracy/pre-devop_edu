@@ -181,6 +181,7 @@ const UserQuery = () => {
               <tr>
                 <th>Name</th>
                 <th>Email</th>
+                <th>Country</th>
                 <th>Type</th>
                 <th>Modules</th>
                 <th>Progress</th>
@@ -192,6 +193,7 @@ const UserQuery = () => {
                 <tr key={user._id}>
                   <td>{user.name}</td>
                   <td>{user.email}</td>
+                  <td>{user.country || 'N/A'}</td>
                   <td>
                     {user.isCsrUser ? (
                       <span className="query-badge csr">CSR</span>
