@@ -22,6 +22,7 @@ import Polls from './pages/Polls';
 import Announcements from './pages/Announcements';
 import Vouchers from './pages/Vouchers';
 import Testimonials from './pages/Testimonials';
+import Profile from './pages/Profile';
 import socketService from './services/socket';
 
 function AppContent() {
@@ -85,6 +86,7 @@ function AppContent() {
           <Route path="/contact" element={<ContactUs />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/admin/change-password-required" element={<ForcePasswordChange />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
         </Routes>

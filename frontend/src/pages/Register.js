@@ -156,7 +156,8 @@ const Register = () => {
             />
             {profilePhoto && (
               <div style={styles.filePreview}>
-                Selected: {profilePhoto.name}
+                <img src={URL.createObjectURL(profilePhoto)} alt="Preview" style={styles.imagePreview} />
+                <span>Selected: {profilePhoto.name}</span>
               </div>
             )}
           </div>
@@ -286,6 +287,30 @@ const styles = {
     cursor: 'pointer',
     fontSize: '20px',
     padding: '5px'
+  },
+  fileInput: {
+    width: '100%',
+    color: '#ccc',
+    padding: '10px 0'
+  },
+  filePreview: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '15px',
+    marginTop: '10px',
+    padding: '10px',
+    backgroundColor: '#0d0d0d',
+    border: '1px solid #333',
+    borderRadius: '8px',
+    color: '#FFD700',
+    fontSize: '14px'
+  },
+  imagePreview: {
+    width: '50px',
+    height: '50px',
+    borderRadius: '50%',
+    objectFit: 'cover',
+    border: '2px solid #FFD700'
   },
   captchaContainer: {
     marginBottom: '25px'
