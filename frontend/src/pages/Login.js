@@ -4,7 +4,8 @@ import { authAPI } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 
 const Login = () => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ email: '', password: '', partnerAccessCode: '' });
+  const [loginType, setLoginType] = useState('standard'); // 'standard' or 'partner'
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [captchaVerified, setCaptchaVerified] = useState(false);
@@ -36,7 +37,20 @@ const Login = () => {
       return;
     }
     try {
-      const { data } = await authAPI.login(formData);
+      let response;
+      if (loginType === 'partner') {
+        response = await authAPI.partnerLogin({
+          email: formData.email,
+          partnerAccessCode: formData.partnerAccessCode
+        });
+      } else {
+        response = await authAPI.login({
+          email: formData.email,
+          password: formData.password
+        });
+      }
+
+      const { data } = response;
       login(data.token, data.user);
       
       if (data.user.mustChangePassword && data.user.role === 'admin') {
@@ -56,6 +70,31 @@ const Login = () => {
         {error && <p style={styles.error}>{error}</p>}
         
         <form onSubmit={handleSubmit}>
+          <div style={styles.loginToggle}>
+            <button
+              type="button"
+              onClick={() => setLoginType('standard')}
+              style={{
+                ...styles.toggleButton,
+                backgroundColor: loginType === 'standard' ? '#FFD700' : 'transparent',
+                color: loginType === 'standard' ? '#000' : '#FFD700'
+              }}
+            >
+              Standard Login
+            </button>
+            <button
+              type="button"
+              onClick={() => setLoginType('partner')}
+              style={{
+                ...styles.toggleButton,
+                backgroundColor: loginType === 'partner' ? '#FFD700' : 'transparent',
+                color: loginType === 'partner' ? '#000' : '#FFD700'
+              }}
+            >
+              Partner Access
+            </button>
+          </div>
+
           <div style={styles.inputGroup}>
             <label style={styles.label}>Email</label>
             <input
@@ -68,26 +107,41 @@ const Login = () => {
             />
           </div>
 
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Password</label>
-            <div style={styles.passwordContainer}>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-                style={styles.passwordInput}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={styles.eyeButton}
-              >
-                {showPassword ? '👁️' : '👁️‍🗨️'}
-              </button>
+          {loginType === 'standard' ? (
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Password</label>
+              <div style={styles.passwordContainer}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required={loginType === 'standard'}
+                  style={styles.passwordInput}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={styles.eyeButton}
+                >
+                  {showPassword ? '👁️' : '👁️‍🗨️'}
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Partner Access Code</label>
+              <input
+                type="text"
+                placeholder="Enter your lifetime access code"
+                value={formData.partnerAccessCode}
+                onChange={(e) => setFormData({ ...formData, partnerAccessCode: e.target.value })}
+                required={loginType === 'partner'}
+                style={styles.input}
+              />
+              <p style={styles.hint}>Format: PTR-XXXXXX</p>
+            </div>
+          )}
 
           <div style={styles.captchaContainer}>
             <p style={styles.captchaLabel}>Verify you're human:</p>
@@ -163,8 +217,32 @@ const styles = {
     marginBottom: '20px',
     textAlign: 'center'
   },
+  loginToggle: {
+    display: 'flex',
+    gap: '10px',
+    marginBottom: '25px',
+    backgroundColor: '#0d0d0d',
+    padding: '5px',
+    borderRadius: '10px',
+    border: '1px solid #333'
+  },
+  toggleButton: {
+    flex: 1,
+    padding: '10px',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: 'all 0.3s'
+  },
   inputGroup: {
     marginBottom: '20px'
+  },
+  hint: {
+    color: '#999',
+    fontSize: '12px',
+    marginTop: '5px'
   },
   label: {
     color: '#FFD700',

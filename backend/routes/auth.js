@@ -43,6 +43,7 @@ const upload = multer({
 
 router.post('/register', upload.single('profilePhoto'), authController.register);
 router.post('/login', authController.login);
+router.post('/partner-login', authController.partnerLogin);
 router.put('/change-password', auth, authController.changePassword);
 router.put('/profile-photo', auth, upload.single('profilePhoto'), authController.updateProfilePhoto);
 router.post('/forgot-password', authController.forgotPassword);

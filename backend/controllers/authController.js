@@ -114,6 +114,49 @@ exports.login = async (req, res) => {
   }
 };
 
+exports.partnerLogin = async (req, res) => {
+  try {
+    const { email, partnerAccessCode } = req.body;
+
+    if (!email || !partnerAccessCode) {
+      return res.status(400).json({ message: 'Email and Access Code are required' });
+    }
+
+    const user = await User.findOne({ 
+      email: email.toLowerCase(), 
+      partnerAccessCode: partnerAccessCode.toUpperCase(),
+      role: 'partner'
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid Partner credentials. Please check your email and access code.' });
+    }
+
+    if (user.isSuspended) {
+      return res.status(403).json({ message: 'Your account has been suspended. Please contact the administrator.' });
+    }
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+    res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        email: user.email, 
+        role: user.role,
+        profilePhoto: user.profilePhoto,
+        isSuperAdmin: user.isSuperAdmin,
+        country: user.country,
+        partnerTier: user.partnerTier,
+        partnerAccessCode: user.partnerAccessCode
+      } 
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Partner login failed', error: error.message });
+  }
+};
+
 exports.changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
