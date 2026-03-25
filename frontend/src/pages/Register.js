@@ -66,9 +66,7 @@ const Register = () => {
         registrationData.append('profilePhoto', profilePhoto);
       }
       
-      const { data } = await authAPI.register(registrationData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const { data } = await authAPI.register(registrationData);
       login(data.token, data.user);
       
       if (data.message) {

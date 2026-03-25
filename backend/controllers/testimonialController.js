@@ -27,7 +27,7 @@ exports.createTestimonial = async (req, res) => {
       userId: req.user._id,
       rating,
       testimonialText: testimonialText.trim(),
-      profilePhoto: req.file ? req.file.path : null
+      profilePhoto: req.file ? '/' + req.file.path.replace(/\\/g, '/') : null
     });
 
     await testimonial.populate('userId', 'name email');
@@ -113,7 +113,7 @@ exports.updateTestimonial = async (req, res) => {
 
     if (rating) testimonial.rating = rating;
     if (testimonialText) testimonial.testimonialText = testimonialText.trim();
-    if (req.file) testimonial.profilePhoto = req.file.path;
+    if (req.file) testimonial.profilePhoto = '/' + req.file.path.replace(/\\/g, '/');
 
     // Reset approval status when edited
     testimonial.isApproved = false;

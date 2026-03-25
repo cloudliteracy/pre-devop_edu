@@ -27,7 +27,7 @@ const Profile = () => {
           <div style={styles.imageContainer}>
             {user.profilePhoto ? (
               <img 
-                src={`http://localhost:5000${user.profilePhoto}`} 
+                src={`http://localhost:5000${user.profilePhoto.startsWith('/') ? '' : '/'}${user.profilePhoto.replace(/\\/g, '/')}`} 
                 alt={`${user.name}'s profile`} 
                 style={styles.profileImage} 
               />
