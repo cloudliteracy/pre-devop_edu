@@ -215,6 +215,12 @@ exports.updateProfilePhoto = async (req, res) => {
     user.profilePhoto = '/' + req.file.path.replace(/\\/g, '/');
     await user.save();
 
+    const Testimonial = require('../models/Testimonial');
+    await Testimonial.updateMany(
+      { userId: userId },
+      { $set: { profilePhoto: user.profilePhoto } }
+    );
+
     res.json({
       message: 'Profile photo updated successfully',
       user: {

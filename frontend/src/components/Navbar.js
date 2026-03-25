@@ -68,16 +68,7 @@ const Navbar = () => {
               🎓 AWS Vouchers
             </Link>
           )}
-          {user && (user.role === 'admin' || user.isSuperAdmin) && (user.isSuperAdmin || user.canManageAnnouncements) && (
-            <Link 
-              to={location.pathname === '/announcements-management' ? '/' : '/announcements-management'} 
-              style={getLinkStyle('announcements')}
-              onMouseEnter={() => setHoveredLink('announcements')}
-              onMouseLeave={() => setHoveredLink(null)}
-            >
-              Announcements
-            </Link>
-          )}
+
           <Link 
             to={location.pathname === '/about' ? '/' : '/about'} 
             style={getLinkStyle('about')}
