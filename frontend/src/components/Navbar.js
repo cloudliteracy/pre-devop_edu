@@ -1,10 +1,11 @@
 import React, { useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import CSRCodeEntry from './CSRCodeEntry';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useContext(AuthContext);
+  const location = useLocation();
   const [hoveredLink, setHoveredLink] = React.useState(null);
   const [showCSRModal, setShowCSRModal] = React.useState(false);
 
@@ -34,7 +35,7 @@ const Navbar = () => {
         </div>
         <div style={styles.menu}>
           <Link 
-            to="/modules" 
+            to={location.pathname === '/modules' ? '/' : '/modules'} 
             style={getLinkStyle('modules')}
             onMouseEnter={() => setHoveredLink('modules')}
             onMouseLeave={() => setHoveredLink(null)}
@@ -42,7 +43,7 @@ const Navbar = () => {
             Modules
           </Link>
           <Link 
-            to="/chat" 
+            to={location.pathname === '/chat' ? '/' : '/chat'} 
             style={getLinkStyle('chat')}
             onMouseEnter={() => setHoveredLink('chat')}
             onMouseLeave={() => setHoveredLink(null)}
@@ -50,7 +51,7 @@ const Navbar = () => {
             Chat
           </Link>
           <Link 
-            to="/polls" 
+            to={location.pathname === '/polls' ? '/' : '/polls'}  
             style={getLinkStyle('polls')}
             onMouseEnter={() => setHoveredLink('polls')}
             onMouseLeave={() => setHoveredLink(null)}
@@ -59,7 +60,7 @@ const Navbar = () => {
           </Link>
           {isAuthenticated && user?.role !== 'admin' && !user?.isSuperAdmin && (
             <Link 
-              to="/vouchers" 
+              to={location.pathname === '/vouchers' ? '/' : '/vouchers'} 
               style={getLinkStyle('vouchers')}
               onMouseEnter={() => setHoveredLink('vouchers')}
               onMouseLeave={() => setHoveredLink(null)}
@@ -69,7 +70,7 @@ const Navbar = () => {
           )}
           {user && (user.role === 'admin' || user.isSuperAdmin) && (user.isSuperAdmin || user.canManageAnnouncements) && (
             <Link 
-              to="/announcements-management" 
+              to={location.pathname === '/announcements-management' ? '/' : '/announcements-management'} 
               style={getLinkStyle('announcements')}
               onMouseEnter={() => setHoveredLink('announcements')}
               onMouseLeave={() => setHoveredLink(null)}
@@ -78,7 +79,7 @@ const Navbar = () => {
             </Link>
           )}
           <Link 
-            to="/about" 
+            to={location.pathname === '/about' ? '/' : '/about'} 
             style={getLinkStyle('about')}
             onMouseEnter={() => setHoveredLink('about')}
             onMouseLeave={() => setHoveredLink(null)}
@@ -87,7 +88,7 @@ const Navbar = () => {
           </Link>
 
           <Link 
-            to="/contact" 
+            to={location.pathname === '/contact' ? '/' : '/contact'} 
             style={getLinkStyle('contact')}
             onMouseEnter={() => setHoveredLink('contact')}
             onMouseLeave={() => setHoveredLink(null)}
@@ -106,7 +107,7 @@ const Navbar = () => {
               </button>
               {user?.role === 'admin' && (
                 <Link 
-                  to="/admin" 
+                  to={location.pathname === '/admin' ? '/' : '/admin'} 
                   style={getLinkStyle('admin')}
                   onMouseEnter={() => setHoveredLink('admin')}
                   onMouseLeave={() => setHoveredLink(null)}
@@ -114,7 +115,7 @@ const Navbar = () => {
                   Admin
                 </Link>
               )}
-              <Link to="/profile" style={styles.profileLink}>
+              <Link to={location.pathname === '/profile' ? '/' : '/profile'} style={styles.profileLink}>
                 <span style={styles.userName}>Hello, {user?.name}</span>
               </Link>
               <button onClick={logout} style={styles.logoutButton}>
@@ -124,7 +125,7 @@ const Navbar = () => {
           ) : (
             <>
               <Link 
-                to="/login" 
+                to={location.pathname === '/login' ? '/' : '/login'} 
                 style={getLinkStyle('login')}
                 onMouseEnter={() => setHoveredLink('login')}
                 onMouseLeave={() => setHoveredLink(null)}
@@ -132,7 +133,7 @@ const Navbar = () => {
                 Login
               </Link>
               <Link 
-                to="/register" 
+                to={location.pathname === '/register' ? '/' : '/register'} 
                 style={getLinkStyle('register')}
                 onMouseEnter={() => setHoveredLink('register')}
                 onMouseLeave={() => setHoveredLink(null)}

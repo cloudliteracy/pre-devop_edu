@@ -35,7 +35,7 @@ const TestimonialCard = ({ testimonial, isOwn, onUpdate }) => {
         <div style={styles.userInfo}>
           {testimonial.profilePhoto ? (
             <img
-              src={`http://localhost:5000/${testimonial.profilePhoto}`}
+              src={`http://localhost:5000${testimonial.profilePhoto.startsWith('/') ? '' : '/'}${testimonial.profilePhoto.replace(/\\/g, '/')}`}
               alt={testimonial.userId.name}
               style={styles.avatar}
             />

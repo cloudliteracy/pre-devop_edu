@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import axios from 'axios';
 
 const FeaturedTestimonials = ({ refreshKey = 0 }) => {
@@ -49,7 +48,7 @@ const FeaturedTestimonials = ({ refreshKey = 0 }) => {
                 <div style={styles.header}>
                   {testimonial.profilePhoto ? (
                     <img
-                      src={`http://localhost:5000/${testimonial.profilePhoto}`}
+                      src={`http://localhost:5000${testimonial.profilePhoto.startsWith('/') ? '' : '/'}${testimonial.profilePhoto.replace(/\\/g, '/')}`}
                       alt={testimonial.userId.name}
                       style={styles.avatar}
                     />

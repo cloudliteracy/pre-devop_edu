@@ -16,8 +16,8 @@ api.interceptors.request.use((config) => {
 });
 
 export const authAPI = {
-  register: (data, config) => api.post('/auth/register', data, config),
-  login: (data, config) => api.post('/auth/login', data, config)
+  register: (data) => axios.post(`${API_URL}/auth/register`, data),
+  login: (data) => api.post('/auth/login', data)
 };
 
 export const moduleAPI = {
