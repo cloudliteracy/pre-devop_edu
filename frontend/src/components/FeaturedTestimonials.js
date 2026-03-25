@@ -78,7 +78,7 @@ const FeaturedTestimonials = ({ refreshKey = 0 }) => {
 
 const styles = {
   container: {
-    maxWidth: '900px',
+    maxWidth: '1250px',
     margin: '60px auto',
     padding: '0 20px'
   },
