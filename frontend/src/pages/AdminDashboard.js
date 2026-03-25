@@ -49,6 +49,7 @@ const AdminDashboard = () => {
     return () => {
       socketService.offOnlineUsersUpdate();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
