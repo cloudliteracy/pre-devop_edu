@@ -198,3 +198,36 @@ exports.resetPassword = async (req, res) => {
     res.status(500).json({ message: 'Password reset failed', error: error.message });
   }
 };
+
+exports.updateProfilePhoto = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image provided' });
+    }
+
+    const userId = req.user._id;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.profilePhoto = '/' + req.file.path.replace(/\\/g, '/');
+    await user.save();
+
+    res.json({
+      message: 'Profile photo updated successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        profilePhoto: user.profilePhoto,
+        isSuperAdmin: user.isSuperAdmin,
+        mustChangePassword: user.mustChangePassword
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update profile photo', error: error.message });
+  }
+};

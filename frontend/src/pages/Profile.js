@@ -1,10 +1,37 @@
-import React, { useContext } from 'react';
+import React, { useContext, useRef, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { authAPI } from '../services/api';
 
 const Profile = () => {
-  const { user } = useContext(AuthContext);
+  const { user, updateUser } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append('profilePhoto', file);
+
+      const { data } = await authAPI.updateProfilePhoto(formData);
+      updateUser(data.user);
+      alert('Profile photo updated successfully!');
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to update photo.');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -25,17 +52,29 @@ const Profile = () => {
       <div style={styles.card}>
         <div style={styles.header}>
           <div style={styles.imageContainer}>
-            {user.profilePhoto ? (
-              <img 
-                src={`http://localhost:5000${user.profilePhoto.startsWith('/') ? '' : '/'}${user.profilePhoto.replace(/\\/g, '/')}`} 
-                alt={`${user.name}'s profile`} 
-                style={styles.profileImage} 
-              />
-            ) : (
-              <div style={styles.profilePlaceholder}>
-                {user.name.charAt(0).toUpperCase()}
+            <input 
+              type="file" 
+              accept="image/*" 
+              style={{ display: 'none' }} 
+              ref={fileInputRef} 
+              onChange={handlePhotoUpload} 
+            />
+            <div style={styles.imageWrapper} onClick={() => !uploading && fileInputRef.current.click()}>
+              {user.profilePhoto ? (
+                <img 
+                  src={`http://localhost:5000${user.profilePhoto.startsWith('/') ? '' : '/'}${user.profilePhoto.replace(/\\/g, '/')}`} 
+                  alt={`${user.name}'s profile`} 
+                  style={{ ...styles.profileImage, opacity: uploading ? 0.5 : 1 }} 
+                />
+              ) : (
+                <div style={{ ...styles.profilePlaceholder, opacity: uploading ? 0.5 : 1 }}>
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div style={styles.editOverlay}>
+                {uploading ? '⏳' : '✎ Edit'}
               </div>
-            )}
+            </div>
           </div>
           <h1 style={styles.name}>{user.name}</h1>
           <p style={styles.role}>{user.role.toUpperCase()}</p>
@@ -84,7 +123,29 @@ const styles = {
     marginBottom: '25px'
   },
   imageContainer: {
-    marginBottom: '20px'
+    marginBottom: '20px',
+    display: 'flex',
+    justifyContent: 'center',
+  },
+  imageWrapper: {
+    position: 'relative',
+    cursor: 'pointer',
+    borderRadius: '50%',
+    overflow: 'hidden',
+    display: 'inline-block'
+  },
+  editOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    color: '#FFD700',
+    textAlign: 'center',
+    padding: '8px 0',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    transition: 'all 0.3s'
   },
   profileImage: {
     width: '120px',

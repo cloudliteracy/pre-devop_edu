@@ -17,7 +17,13 @@ api.interceptors.request.use((config) => {
 
 export const authAPI = {
   register: (data) => axios.post(`${API_URL}/auth/register`, data),
-  login: (data) => api.post('/auth/login', data)
+  login: (data) => api.post('/auth/login', data),
+  updateProfilePhoto: (data) => {
+    const token = localStorage.getItem('token');
+    return axios.put(`${API_URL}/auth/profile-photo`, data, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
 };
 
 export const moduleAPI = {
