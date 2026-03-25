@@ -564,6 +564,18 @@ const AdminDashboard = () => {
               🎓 Voucher Management
             </button>
           )}
+          {currentUser && (currentUser.role === 'admin' || currentUser.isSuperAdmin) && (currentUser.isSuperAdmin || currentUser.canManageAnnouncements) && (
+            <button
+              onClick={() => navigate('/announcements-management')}
+              style={{
+                ...styles.tab,
+                backgroundColor: '#1a1a1a',
+                color: '#FFD700'
+              }}
+            >
+              📢 Announcements
+            </button>
+          )}
           {(currentUser?.isSuperAdmin || currentUser?.role === 'admin') && (
             <button
               onClick={() => setActiveTab('testimonials')}
