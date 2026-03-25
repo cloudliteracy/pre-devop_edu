@@ -23,6 +23,7 @@ import Announcements from './pages/Announcements';
 import Vouchers from './pages/Vouchers';
 import Testimonials from './pages/Testimonials';
 import Profile from './pages/Profile';
+import PartnerPackages from './pages/PartnerPackages';
 import socketService from './services/socket';
 
 function AppContent() {
@@ -89,6 +90,7 @@ function AppContent() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/admin/change-password-required" element={<ForcePasswordChange />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/partner-packages" element={<PartnerPackages />} />
         </Routes>
       </div>
       <Footer />

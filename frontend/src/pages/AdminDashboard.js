@@ -11,6 +11,7 @@ import UserQuery from '../components/UserQuery';
 import VoucherManagement from '../components/VoucherManagement';
 import AdminHelpDesk from './AdminHelpDesk';
 import TestimonialManagement from '../components/TestimonialManagement';
+import PartnerManagement from '../components/PartnerManagement';
 import * as contentService from '../services/content';
 import * as adminService from '../services/admin';
 
@@ -481,6 +482,18 @@ const AdminDashboard = () => {
               }}
             >
               Admin Management
+            </button>
+          )}
+          {currentUser && (currentUser.role === 'admin' || currentUser.isSuperAdmin) && (
+            <button
+              onClick={() => setActiveTab('partnerManagement')}
+              style={{
+                ...styles.tab,
+                backgroundColor: activeTab === 'partnerManagement' ? '#FFD700' : '#1a1a1a',
+                color: activeTab === 'partnerManagement' ? '#000' : '#FFD700'
+              }}
+            >
+              🤝 Partner Management
             </button>
           )}
           {(currentUser?.isSuperAdmin || currentUser?.canUploadContent) && (
