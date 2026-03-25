@@ -114,7 +114,9 @@ const Navbar = () => {
                   Admin
                 </Link>
               )}
-              <span style={styles.userName}>Hello, {user?.name}</span>
+              <Link to="/profile" style={styles.profileLink}>
+                <span style={styles.userName}>Hello, {user?.name}</span>
+              </Link>
               <button onClick={logout} style={styles.logoutButton}>
                 Logout
               </button>
@@ -206,6 +208,13 @@ const styles = {
   userName: {
     color: '#ccc',
     fontSize: '15px'
+  },
+  profileLink: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textDecoration: 'none',
+    cursor: 'pointer'
   },
   logoutButton: {
     backgroundColor: '#FFD700',

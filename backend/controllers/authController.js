@@ -14,6 +14,10 @@ exports.register = async (req, res) => {
 
     const userData = { name, email, password };
 
+    if (req.file) {
+      userData.profilePhoto = `/` + req.file.path.replace(/\\/g, '/');
+    }
+
     // Handle CSR code if provided
     if (csrCode) {
       const CSRCode = require('../models/CSRCode');
@@ -58,6 +62,7 @@ exports.register = async (req, res) => {
           name: user.name, 
           email: user.email, 
           role: user.role,
+          profilePhoto: user.profilePhoto,
           isCsrUser: user.isCsrUser
         },
         message: `CSR registration successful! You now have free access to all modules for ${code.accessDurationMonths} months.`
@@ -69,7 +74,7 @@ exports.register = async (req, res) => {
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-    res.status(201).json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+    res.status(201).json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role, profilePhoto: user.profilePhoto } });
   } catch (error) {
     res.status(500).json({ message: 'Registration failed', error: error.message });
   }
@@ -97,6 +102,7 @@ exports.login = async (req, res) => {
         name: user.name, 
         email: user.email, 
         role: user.role,
+        profilePhoto: user.profilePhoto,
         isSuperAdmin: user.isSuperAdmin,
         mustChangePassword: user.mustChangePassword
       } 
