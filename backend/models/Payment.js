@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const paymentSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   moduleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Module', required: false, default: null },
+  isPartnerPurchase: { type: Boolean, default: false },
+  partnerTier: { type: String, enum: ['Silver', 'Gold', 'Platinum', 'Diamond'] },
   amount: { type: Number, required: true },
   currency: { type: String, default: 'USD' },
   paymentMethod: { 

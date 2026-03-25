@@ -123,6 +123,11 @@ const Home = () => {
               Browse Modules
             </button>
           </Link>
+          <Link to="/partner-packages" style={{ textDecoration: 'none' }}>
+            <button style={styles.secondaryButton}>
+              🤝 Become A Partner
+            </button>
+          </Link>
         </div>
       </div>
 

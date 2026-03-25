@@ -58,7 +58,7 @@ const Navbar = () => {
           >
             Polls
           </Link>
-          {isAuthenticated && user?.role !== 'admin' && !user?.isSuperAdmin && (
+          {isAuthenticated && user?.role !== 'admin' && !user?.isSuperAdmin && user?.role !== 'partner' && (
             <Link 
               to={location.pathname === '/vouchers' ? '/' : '/vouchers'} 
               style={getLinkStyle('vouchers')}
@@ -88,14 +88,16 @@ const Navbar = () => {
           </Link>
           {isAuthenticated ? (
             <>
-              <button 
-                onClick={() => setShowCSRModal(true)}
-                style={getLinkStyle('csr')}
-                onMouseEnter={() => setHoveredLink('csr')}
-                onMouseLeave={() => setHoveredLink(null)}
-              >
-                🎓 CSR Access Code
-              </button>
+              {user?.role !== 'partner' && (
+                <button 
+                  onClick={() => setShowCSRModal(true)}
+                  style={getLinkStyle('csr')}
+                  onMouseEnter={() => setHoveredLink('csr')}
+                  onMouseLeave={() => setHoveredLink(null)}
+                >
+                  🎓 CSR Access Code
+                </button>
+              )}
               {user?.role === 'admin' && (
                 <Link 
                   to={location.pathname === '/admin' ? '/' : '/admin'} 

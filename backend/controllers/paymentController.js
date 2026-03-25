@@ -18,13 +18,20 @@ const getPayPalAccessToken = async () => {
 
 exports.initiatePayment = async (req, res) => {
   try {
-    const { moduleId, paymentMethod, phoneNumber, amount, isDonation } = req.body;
+    const { moduleId, paymentMethod, phoneNumber, amount, isDonation, isPartnerPurchase, partnerTier } = req.body;
     const userId = req.user._id;
 
     let paymentAmount;
     let itemDescription;
 
-    if (isDonation) {
+    if (isPartnerPurchase) {
+      if (!['Silver', 'Gold', 'Platinum', 'Diamond'].includes(partnerTier)) {
+         return res.status(400).json({ message: 'Invalid partner tier' });
+      }
+      const tierPrices = { Silver: 500, Gold: 1000, Platinum: 2000, Diamond: 5000 };
+      paymentAmount = tierPrices[partnerTier];
+      itemDescription = `${partnerTier} Partner Package`;
+    } else if (isDonation) {
       // Handle donation
       paymentAmount = amount;
       itemDescription = 'Donation to CloudLiteracy';
@@ -40,7 +47,9 @@ exports.initiatePayment = async (req, res) => {
 
     const payment = new Payment({
       userId,
-      moduleId: isDonation ? null : moduleId,
+      moduleId: isDonation || isPartnerPurchase ? null : moduleId,
+      isPartnerPurchase: isPartnerPurchase || false,
+      partnerTier: isPartnerPurchase ? partnerTier : undefined,
       amount: paymentAmount,
       paymentMethod,
       phoneNumber
@@ -107,8 +116,18 @@ exports.verifyStripePayment = async (req, res) => {
         payment.status = 'completed';
         await payment.save();
 
-        // Only grant module access if it's not a donation
-        if (payment.moduleId) {
+        if (payment.isPartnerPurchase) {
+          const crypto = require('crypto');
+          const accessCode = 'PTR-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+          await User.findByIdAndUpdate(userId, {
+            $set: { 
+              role: 'partner', 
+              partnerTier: payment.partnerTier,
+              partnerAccessCode: accessCode,
+              isCsrUser: true 
+            }
+          });
+        } else if (payment.moduleId) {
           await User.findByIdAndUpdate(userId, {
             $addToSet: { purchasedModules: payment.moduleId }
           });
@@ -118,7 +137,8 @@ exports.verifyStripePayment = async (req, res) => {
           success: true,
           message: 'Payment verified successfully',
           moduleId: payment.moduleId,
-          isDonation: !payment.moduleId
+          isDonation: !payment.moduleId && !payment.isPartnerPurchase,
+          isPartnerPurchase: payment.isPartnerPurchase
         });
       }
     }
@@ -149,8 +169,18 @@ exports.verifyPayPalPayment = async (req, res) => {
         payment.status = 'completed';
         await payment.save();
 
-        // Only grant module access if it's not a donation
-        if (payment.moduleId) {
+        if (payment.isPartnerPurchase) {
+          const crypto = require('crypto');
+          const accessCode = 'PTR-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+          await User.findByIdAndUpdate(userId, {
+            $set: { 
+              role: 'partner', 
+              partnerTier: payment.partnerTier,
+              partnerAccessCode: accessCode,
+              isCsrUser: true 
+            }
+          });
+        } else if (payment.moduleId) {
           await User.findByIdAndUpdate(userId, {
             $addToSet: { purchasedModules: payment.moduleId }
           });
@@ -160,7 +190,8 @@ exports.verifyPayPalPayment = async (req, res) => {
           success: true,
           message: 'Payment verified successfully',
           moduleId: payment.moduleId,
-          isDonation: !payment.moduleId
+          isDonation: !payment.moduleId && !payment.isPartnerPurchase,
+          isPartnerPurchase: payment.isPartnerPurchase
         });
       }
     }
