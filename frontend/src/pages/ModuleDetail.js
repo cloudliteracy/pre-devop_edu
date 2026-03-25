@@ -28,9 +28,9 @@ const ModuleDetail = () => {
       return;
     }
 
-    // Check if user is admin or super admin
+    // Check if user is admin, super admin, or partner
     const currentUser = JSON.parse(localStorage.getItem('user'));
-    const adminAccess = currentUser?.role === 'admin' || currentUser?.isSuperAdmin;
+    const adminAccess = currentUser?.role === 'admin' || currentUser?.role === 'partner' || currentUser?.isSuperAdmin;
     setIsAdmin(adminAccess);
 
     const fetchModule = async () => {
@@ -306,10 +306,10 @@ const ModuleDetail = () => {
         {/* Show Module Content if user has access */}
         {hasAccess && (
           <>
-            {/* Admin Access Badge */}
+            {/* Admin/Partner Access Badge */}
             {isAdmin && (
               <div style={styles.adminAccessBadge}>
-                🔓 Admin Access - No payment required
+                🔓 {user?.role === 'partner' ? 'Corporate Partner' : 'Admin'} Access - Universal Access unlocked
               </div>
             )}
 

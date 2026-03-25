@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import axios from 'axios';
 import { authAPI } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
@@ -16,11 +16,10 @@ const PartnerPackages = () => {
   const [formData, setFormData] = useState({ name: '', email: '', password: '', country: '' });
   const [profilePhoto, setProfilePhoto] = useState(null);
   const [captchaVerified, setCaptchaVerified] = useState(false);
-  const [draggedText, setDraggedText] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, isAuthenticated } = useContext(AuthContext);
-  const navigate = useNavigate();
 
   const handleBuyClick = (tier) => {
     setSelectedTier(tier);
@@ -35,7 +34,6 @@ const PartnerPackages = () => {
     e.preventDefault();
     const text = e.dataTransfer.getData('text');
     if (text === 'cloudliteracy') {
-      setDraggedText(text);
       setCaptchaVerified(true);
     }
   };
@@ -178,14 +176,23 @@ const PartnerPackages = () => {
                   </div>
                   <div style={styles.inputGroup}>
                     <label style={styles.label}>Password</label>
-                    <input
-                      type="password"
-                      placeholder="Create a password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required
-                      style={styles.input}
-                    />
+                    <div style={styles.passwordContainer}>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Create a password"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        required
+                        style={styles.passwordInput}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        style={styles.eyeButton}
+                      >
+                        {showPassword ? '👁️' : '👁️🗨️'}
+                      </button>
+                    </div>
                   </div>
                   <div style={styles.inputGroup}>
                     <label style={styles.label}>Profile Photo *</label>
@@ -383,7 +390,35 @@ const styles = {
     border: '1px solid #333',
     borderRadius: '8px',
     color: '#fff',
-    fontSize: '16px'
+    fontSize: '16px',
+    width: '100%',
+    boxSizing: 'border-box'
+  },
+  passwordContainer: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center'
+  },
+  passwordInput: {
+    width: '100%',
+    padding: '15px',
+    paddingRight: '45px',
+    backgroundColor: '#0d0d0d',
+    border: '1px solid #333',
+    borderRadius: '8px',
+    color: '#fff',
+    fontSize: '16px',
+    outline: 'none',
+    boxSizing: 'border-box'
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: '10px',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '20px',
+    padding: '5px'
   },
   fileInput: {
     padding: '10px',
