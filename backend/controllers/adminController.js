@@ -6,9 +6,6 @@ const AuditLog = require('../models/AuditLog');
 
 exports.getDashboardStats = async (req, res) => {
   try {
-    if (!req.user.canCreateSuperAdmins) {
-      return res.status(403).json({ message: 'Only primary super admin can access dashboard stats' });
-    }
     const Visitor = require('../models/Visitor');
     
     const totalUsers = await User.countDocuments({ role: 'user' });
@@ -68,9 +65,6 @@ exports.getDashboardStats = async (req, res) => {
 
 exports.getAllUsers = async (req, res) => {
   try {
-    if (!req.user.canCreateSuperAdmins) {
-      return res.status(403).json({ message: 'Only primary super admin can view all users' });
-    }
     const { page = 1, limit = 10, search = '' } = req.query;
     
     const query = { role: 'user' };
@@ -157,9 +151,6 @@ exports.getUserDetails = async (req, res) => {
 
 exports.getModuleAnalytics = async (req, res) => {
   try {
-    if (!req.user.canCreateSuperAdmins) {
-      return res.status(403).json({ message: 'Only primary super admin can view module analytics' });
-    }
     const modules = await Module.find();
     const analytics = [];
 
@@ -203,9 +194,6 @@ exports.getModuleAnalytics = async (req, res) => {
 
 exports.getRecentActivity = async (req, res) => {
   try {
-    if (!req.user.canCreateSuperAdmins) {
-      return res.status(403).json({ message: 'Only primary super admin can view recent activity' });
-    }
     const recentUsers = await User.find({ role: 'user' })
       .select('name email createdAt')
       .sort({ createdAt: -1 })

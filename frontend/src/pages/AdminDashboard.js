@@ -48,7 +48,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
-    if (!user || !user.canCreateSuperAdmins) {
+    if (!user || user.role !== 'admin') {
       window.location.href = '/login';
       return;
     }
@@ -89,8 +89,11 @@ const AdminDashboard = () => {
       setAnalytics(analyticsRes.data);
       setActivity(activityRes.data);
       
-      const adminsRes = await axios.get('http://localhost:5000/api/admin/admins', { headers });
-      setAdmins(adminsRes.data);
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (user?.canCreateSuperAdmins) {
+        const adminsRes = await axios.get('http://localhost:5000/api/admin/admins', { headers });
+        setAdmins(adminsRes.data);
+      }
     } catch (error) {
       if (error.response?.status === 403) {
         alert('Admin access required');
