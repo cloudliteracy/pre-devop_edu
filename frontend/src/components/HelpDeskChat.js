@@ -49,7 +49,7 @@ const HelpDeskChat = ({ user, onClose, onUnreadChange }) => {
       setStatus('connecting');
       
       const payload = {
-        userType: user ? 'learner' : 'guest'
+        userType: user ? (user.role === 'partner' ? 'partner' : 'learner') : 'guest'
       };
 
       if (!user) {

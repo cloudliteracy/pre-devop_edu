@@ -5,7 +5,6 @@ import { authAPI } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 
 const packages = [
-  { id: 'Silver', name: 'Silver Partner', price: 500, description: 'Support basic CSR initiatives.', icon: '🥈', color: '#C0C0C0' },
   { id: 'Gold', name: 'Gold Partner', price: 1000, description: 'Enhance regional CSR drives.', icon: '🥇', color: '#FFD700' },
   { id: 'Platinum', name: 'Platinum Partner', price: 2000, description: 'Sponsor dedicated learning events.', icon: '💎', color: '#E5E4E2' },
   { id: 'Diamond', name: 'Diamond Partner', price: 5000, description: 'Global CSR campaign leadership.', icon: '👑', color: '#b9f2ff' }
@@ -332,12 +331,13 @@ const styles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(0,0,0,0.85)',
     display: 'flex',
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'flex-start', // Changed from center for better scrolling
     zIndex: 1000,
-    padding: '20px'
+    padding: '40px 20px',
+    overflowY: 'auto' // Ensure scrolling for long forms
   },
   modalContent: {
     backgroundColor: '#1a1a1a',
@@ -346,17 +346,28 @@ const styles = {
     width: '100%',
     maxWidth: '500px',
     position: 'relative',
-    border: '1px solid #333'
+    border: '1px solid #FFD700', // Highlighted border
+    boxShadow: '0 0 20px rgba(255, 215, 0, 0.2)',
+    margin: 'auto 0' // Vertically center if possible, but allow flex-start to work
   },
   closeButton: {
     position: 'absolute',
-    top: '20px',
-    right: '25px',
-    background: 'none',
-    border: 'none',
-    color: '#fff',
-    fontSize: '30px',
-    cursor: 'pointer'
+    top: '15px',
+    right: '15px',
+    background: '#333',
+    border: '2px solid #FFD700',
+    color: '#FFD700',
+    width: '35px',
+    height: '35px',
+    borderRadius: '50%',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    fontSize: '20px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    zIndex: 1001
   },
   modalTitle: {
     color: '#FFD700',

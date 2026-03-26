@@ -29,6 +29,58 @@ const SurveyResponseForm = ({ poll, onSuccess }) => {
     }));
   };
 
+  const checkVisibility = (question, qIndex) => {
+    if (!question.logic || !question.logic.showIf) return true;
+
+    const { questionIndex, operator, value } = question.logic.showIf;
+    const dependentAnswer = responses[questionIndex];
+
+    if (dependentAnswer === undefined) return false;
+
+    // Handle single/multiple choice (index based) vs string based
+    const answerToCompare = typeof dependentAnswer === 'number' 
+      ? dependentAnswer.toString() 
+      : Array.isArray(dependentAnswer) 
+        ? dependentAnswer.map(v => v.toString())
+        : dependentAnswer;
+
+    switch (operator) {
+      case 'equals':
+        return Array.isArray(answerToCompare) 
+          ? answerToCompare.includes(value.toString()) 
+          : answerToCompare === value.toString();
+      case 'not_equals':
+        return Array.isArray(answerToCompare) 
+          ? !answerToCompare.includes(value.toString()) 
+          : answerToCompare !== value.toString();
+      case 'contains':
+        return answerToCompare.toString().toLowerCase().includes(value.toString().toLowerCase());
+      default:
+        return true;
+    }
+  };
+
+  const getPipedText = (question) => {
+    let text = question.questionText;
+    if (question.piping?.enabled && question.piping.sourceQuestionIndex !== undefined) {
+      const sourceAnswer = responses[question.piping.sourceQuestionIndex];
+      let displayAnswer = '___';
+      
+      if (sourceAnswer !== undefined) {
+        if (typeof sourceAnswer === 'number') {
+          displayAnswer = poll.questions[question.piping.sourceQuestionIndex].options[sourceAnswer]?.text || sourceAnswer;
+        } else if (Array.isArray(sourceAnswer)) {
+          displayAnswer = sourceAnswer.map(idx => poll.questions[question.piping.sourceQuestionIndex].options[idx]?.text || idx).join(', ');
+        } else {
+          displayAnswer = sourceAnswer;
+        }
+      }
+      
+      text = text.replace(/\[ANSWER\]/g, displayAnswer);
+    }
+    return text;
+  };
+
   const handleSubmit = async () => {
     // Validate required questions
     const unansweredRequired = poll.questions.filter((q, index) => {
@@ -94,12 +146,16 @@ const SurveyResponseForm = ({ poll, onSuccess }) => {
 
   return (
     <div className="survey-response-form">
-      {poll.questions.map((question, qIndex) => (
-        <div key={qIndex} className="survey-question">
-          <h4 className="question-text">
-            Q{qIndex + 1}: {question.questionText}
-            {question.isRequired && <span className="required-asterisk"> *</span>}
-          </h4>
+      {poll.questions.map((question, qIndex) => {
+        const isVisible = checkVisibility(question, qIndex);
+        if (!isVisible) return null;
+
+        return (
+          <div key={qIndex} className="survey-question">
+            <h4 className="question-text">
+              Q{qIndex + 1}: {getPipedText(question)}
+              {question.isRequired && <span className="required-asterisk"> *</span>}
+            </h4>
           <div className="question-badges">
             <span className="question-type-badge">
               {question.questionType === 'single' ? 'Single Choice' : 
@@ -165,7 +221,8 @@ const SurveyResponseForm = ({ poll, onSuccess }) => {
             />
           )}
         </div>
-      ))}
+        );
+      })}
 
       <button 
         onClick={handleSubmit} 

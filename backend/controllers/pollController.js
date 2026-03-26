@@ -96,6 +96,8 @@ exports.createPoll = async (req, res) => {
         questionText: q.questionText.trim(),
         questionType: q.questionType,
         isRequired: q.isRequired || false,
+        logic: q.logic || undefined,
+        piping: q.piping || undefined,
         allowedFileTypes: q.allowedFileTypes || ['pdf', 'video', 'link'],
         options: q.options ? q.options.map(opt => ({ text: opt.trim() })) : [],
         responses: []
@@ -169,6 +171,8 @@ exports.updatePoll = async (req, res) => {
       questionText: q.questionText.trim(),
       questionType: q.questionType,
       isRequired: q.isRequired || false,
+      logic: q.logic || undefined,
+      piping: q.piping || undefined,
       allowedFileTypes: q.allowedFileTypes || ['pdf', 'video', 'link'],
       options: q.options ? q.options.map(opt => ({ text: opt.trim() })) : [],
       responses: []
