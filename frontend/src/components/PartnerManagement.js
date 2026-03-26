@@ -75,6 +75,7 @@ const PartnerManagement = () => {
             <div style={styles.cell}>Tier</div>
             <div style={styles.cell}>Lifetime Access Code</div>
             <div style={styles.cell}>Joined</div>
+            <div style={styles.cell}>Status</div>
             <div style={styles.cell}>Actions</div>
           </div>
           {partners.map(partner => (
@@ -98,6 +99,13 @@ const PartnerManagement = () => {
                 <code style={styles.codeBadge}>{partner.partnerAccessCode || 'N/A'}</code>
               </div>
               <div style={styles.cell}>{new Date(partner.createdAt).toLocaleDateString()}</div>
+              <div style={styles.cell}>
+                {partner.isSuspended ? (
+                  <span style={styles.suspendedBadge}>SUSPENDED</span>
+                ) : (
+                  <span style={styles.activeBadge}>Active</span>
+                )}
+              </div>
               <div style={styles.cell}>
                 <div style={styles.actionGroup}>
                   <button 
@@ -149,7 +157,7 @@ const styles = {
   },
   tableHeader: {
     display: 'grid',
-    gridTemplateColumns: '1.5fr 2fr 1fr 0.8fr 1.5fr 1fr 1fr',
+    gridTemplateColumns: '1.4fr 1.8fr 0.8fr 0.8fr 1.5fr 0.8fr 0.8fr 0.8fr',
     padding: '15px',
     backgroundColor: '#0d0d0d',
     borderRadius: '8px',
@@ -158,7 +166,7 @@ const styles = {
   },
   tableRow: {
     display: 'grid',
-    gridTemplateColumns: '1.5fr 2fr 1fr 0.8fr 1.5fr 1fr 1fr',
+    gridTemplateColumns: '1.4fr 1.8fr 0.8fr 0.8fr 1.5fr 0.8fr 0.8fr 0.8fr',
     padding: '15px',
     backgroundColor: '#0d0d0d',
     borderRadius: '8px',
@@ -200,6 +208,20 @@ const styles = {
     fontWeight: 'bold',
     fontSize: '14px',
     transition: 'opacity 0.2s'
+  },
+  suspendedBadge: {
+    backgroundColor: '#8B0000',
+    color: '#fff',
+    padding: '4px 8px',
+    borderRadius: '4px',
+    fontSize: '11px',
+    fontWeight: 'bold',
+    textTransform: 'uppercase'
+  },
+  activeBadge: {
+    color: '#4CAF50',
+    fontWeight: 'bold',
+    fontSize: '13px'
   }
 };
 
