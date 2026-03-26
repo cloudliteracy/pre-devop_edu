@@ -86,7 +86,7 @@ const Navbar = () => {
           </Link>
           {isAuthenticated ? (
             <>
-              {user?.role === 'admin' && user?.canCreateSuperAdmins && (
+              {user?.role === 'admin' && (
                 <Link 
                   to={location.pathname === '/admin' ? '/' : '/admin'} 
                   style={getLinkStyle('admin')}
