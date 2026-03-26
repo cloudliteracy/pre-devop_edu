@@ -23,5 +23,7 @@ router.post('/users/query', auth, adminAuth, adminController.queryUsers);
 router.put('/users/:id/suspend', auth, adminAuth, adminController.suspendUser);
 router.delete('/users/:id/delete', auth, adminAuth, adminController.deleteUser);
 router.put('/admins/:id/toggle-helpdesk-access', auth, adminAuth, adminController.toggleHelpDeskAccess);
+router.put('/admins/:id/authorized-country', auth, adminAuth, adminController.updateAdminAuthorizedCountry);
+router.get('/audit-logs/:adminId', auth, adminAuth, adminController.getAdminAuditLogs);
 
 module.exports = router;
