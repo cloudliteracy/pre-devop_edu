@@ -1,13 +1,11 @@
 import React, { useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import CSRCodeEntry from './CSRCodeEntry';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useContext(AuthContext);
   const location = useLocation();
   const [hoveredLink, setHoveredLink] = React.useState(null);
-  const [showCSRModal, setShowCSRModal] = React.useState(false);
 
   const getLinkStyle = (linkName) => ({
     ...styles.link,
@@ -88,16 +86,6 @@ const Navbar = () => {
           </Link>
           {isAuthenticated ? (
             <>
-              {user?.role !== 'partner' && (
-                <button 
-                  onClick={() => setShowCSRModal(true)}
-                  style={getLinkStyle('csr')}
-                  onMouseEnter={() => setHoveredLink('csr')}
-                  onMouseLeave={() => setHoveredLink(null)}
-                >
-                  🎓 CSR Access Code
-                </button>
-              )}
               {user?.role === 'admin' && user?.canCreateSuperAdmins && (
                 <Link 
                   to={location.pathname === '/admin' ? '/' : '/admin'} 
@@ -144,19 +132,10 @@ const Navbar = () => {
               >
                 Register
               </Link>
-              <button 
-                onClick={() => setShowCSRModal(true)}
-                style={getLinkStyle('csr')}
-                onMouseEnter={() => setHoveredLink('csr')}
-                onMouseLeave={() => setHoveredLink(null)}
-              >
-                🎓 CSR Access Code
-              </button>
             </>
           )}
         </div>
       </div>
-      {showCSRModal && <CSRCodeEntry onClose={() => setShowCSRModal(false)} />}
     </nav>
   );
 };
