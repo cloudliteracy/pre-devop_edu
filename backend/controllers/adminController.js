@@ -6,6 +6,9 @@ const AuditLog = require('../models/AuditLog');
 
 exports.getDashboardStats = async (req, res) => {
   try {
+    if (!req.user.canCreateSuperAdmins) {
+      return res.status(403).json({ message: 'Only primary super admin can access dashboard stats' });
+    }
     const Visitor = require('../models/Visitor');
     
     const totalUsers = await User.countDocuments({ role: 'user' });
@@ -65,6 +68,9 @@ exports.getDashboardStats = async (req, res) => {
 
 exports.getAllUsers = async (req, res) => {
   try {
+    if (!req.user.canCreateSuperAdmins) {
+      return res.status(403).json({ message: 'Only primary super admin can view all users' });
+    }
     const { page = 1, limit = 10, search = '' } = req.query;
     
     const query = { role: 'user' };
@@ -151,6 +157,9 @@ exports.getUserDetails = async (req, res) => {
 
 exports.getModuleAnalytics = async (req, res) => {
   try {
+    if (!req.user.canCreateSuperAdmins) {
+      return res.status(403).json({ message: 'Only primary super admin can view module analytics' });
+    }
     const modules = await Module.find();
     const analytics = [];
 
@@ -194,6 +203,9 @@ exports.getModuleAnalytics = async (req, res) => {
 
 exports.getRecentActivity = async (req, res) => {
   try {
+    if (!req.user.canCreateSuperAdmins) {
+      return res.status(403).json({ message: 'Only primary super admin can view recent activity' });
+    }
     const recentUsers = await User.find({ role: 'user' })
       .select('name email createdAt')
       .sort({ createdAt: -1 })
@@ -235,8 +247,8 @@ exports.createAdmin = async (req, res) => {
     console.log('Requesting user isSuperAdmin:', requestingUser?.isSuperAdmin);
     console.log('Requesting user canCreateSuperAdmins:', requestingUser?.canCreateSuperAdmins);
 
-    if (!requestingUser.isSuperAdmin) {
-      return res.status(403).json({ message: 'Only super admin can create new admins' });
+    if (!requestingUser.canCreateSuperAdmins) {
+      return res.status(403).json({ message: 'Only primary super admin can create new admins' });
     }
 
     // Only allow setting isSuperAdmin if the requester has canCreateSuperAdmins: true
@@ -281,6 +293,9 @@ exports.createAdmin = async (req, res) => {
 
 exports.getAllAdmins = async (req, res) => {
   try {
+    if (!req.user.canCreateSuperAdmins) {
+      return res.status(403).json({ message: 'Only primary super admin can fetch all admins' });
+    }
     const admins = await User.find({ role: 'admin' })
       .select('-password')
       .sort({ createdAt: -1 });
@@ -301,10 +316,14 @@ exports.toggleAdminSuspension = async (req, res) => {
       return res.status(404).json({ message: 'Admin not found' });
     }
 
+    if (!requestingUser.canCreateSuperAdmins) {
+      return res.status(403).json({ message: 'Only primary super admin can manage other admins' });
+    }
+
     // Restriction: Only primary super admin (canCreateSuperAdmins: true) can suspend/delete other super admins
     if (targetAdmin.isSuperAdmin) {
-      if (!requestingUser.canCreateSuperAdmins || targetAdmin._id.toString() === requestingUser._id.toString()) {
-        return res.status(403).json({ message: 'Cannot suspend this super admin' });
+      if (targetAdmin._id.toString() === requestingUser._id.toString()) {
+        return res.status(403).json({ message: 'Cannot suspend yourself' });
       }
     }
 
@@ -343,8 +362,8 @@ exports.deleteAdmin = async (req, res) => {
     const { id } = req.params;
     const requestingUser = req.user;
 
-    if (!requestingUser.isSuperAdmin) {
-      return res.status(403).json({ message: 'Only super admin can delete admins' });
+    if (!requestingUser.canCreateSuperAdmins) {
+      return res.status(403).json({ message: 'Only primary super admin can delete admins' });
     }
 
     const targetAdmin = await User.findById(id);
@@ -355,8 +374,8 @@ exports.deleteAdmin = async (req, res) => {
 
     // Restriction: Only primary super admin (canCreateSuperAdmins: true) can suspend/delete other super admins
     if (targetAdmin.isSuperAdmin) {
-      if (!requestingUser.canCreateSuperAdmins || targetAdmin._id.toString() === requestingUser._id.toString()) {
-        return res.status(403).json({ message: 'Cannot delete this super admin' });
+      if (targetAdmin._id.toString() === requestingUser._id.toString()) {
+        return res.status(403).json({ message: 'Cannot delete yourself' });
       }
     }
 
@@ -381,8 +400,8 @@ exports.toggleContentUploadAccess = async (req, res) => {
     const { id } = req.params;
     const requestingUser = req.user;
 
-    if (!requestingUser.isSuperAdmin) {
-      return res.status(403).json({ message: 'Only super admin can manage content upload access' });
+    if (!requestingUser.canCreateSuperAdmins) {
+      return res.status(403).json({ message: 'Only primary super admin can manage global content upload access' });
     }
 
     const targetAdmin = await User.findById(id);
@@ -834,8 +853,8 @@ exports.updateAdminAuthorizedCountry = async (req, res) => {
       return res.status(404).json({ message: 'Admin not found' });
     }
 
-    // Role check: Only super admins can update locations
-    if (!requestingUser.isSuperAdmin) {
+    // Role check: Only primary super admin can update locations
+    if (!requestingUser.canCreateSuperAdmins) {
       return res.status(403).json({ message: 'Not authorized to manage admin locations' });
     }
 
@@ -865,6 +884,10 @@ exports.updateAdminAuthorizedCountry = async (req, res) => {
 
 exports.getAdminAuditLogs = async (req, res) => {
   try {
+    if (!req.user.canCreateSuperAdmins) {
+      return res.status(403).json({ message: 'Only primary super admin can view audit logs' });
+    }
+
     const { adminId } = req.params;
     const { limit = 50 } = req.query;
 
