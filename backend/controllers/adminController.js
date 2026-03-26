@@ -606,7 +606,16 @@ exports.queryUsers = async (req, res) => {
 
     // Role filter
     if (role && role !== 'all') {
-      query.role = role;
+      if (role === 'partner') {
+        // Find users with role 'partner' OR any admin who has a partnerTier
+        query.$or = [
+          { role: 'partner' },
+          { partnerTier: { $exists: true, $ne: null } }
+        ];
+        delete query.role;
+      } else {
+        query.role = role;
+      }
     }
 
     // CSR user filter
@@ -632,7 +641,7 @@ exports.queryUsers = async (req, res) => {
 
     // Execute query
     const users = await User.find(query)
-      .select('name email role isCsrUser country partnerTier partnerAccessCode purchasedModules createdAt')
+      .select('name email role isCsrUser country partnerTier partnerAccessCode purchasedModules isSuspended createdAt')
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 });
@@ -702,8 +711,8 @@ exports.suspendUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (targetUser.role === 'admin' || targetUser.isSuperAdmin) {
-      return res.status(403).json({ message: 'Cannot suspend admin users' });
+    if (targetUser.isSuperAdmin) {
+      return res.status(403).json({ message: 'Cannot suspend super admin users' });
     }
 
     targetUser.isSuspended = !targetUser.isSuspended;
