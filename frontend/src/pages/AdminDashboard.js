@@ -48,6 +48,10 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
+    if (!user || !user.canCreateSuperAdmins) {
+      window.location.href = '/login';
+      return;
+    }
     setCurrentUser(user);
     fetchDashboardData();
 
@@ -63,7 +67,7 @@ const AdminDashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'surveyAnalytics' && (currentUser?.isSuperAdmin || currentUser?.canViewSurveyAnalytics)) {
+    if (activeTab === 'surveyAnalytics' && (currentUser?.canCreateSuperAdmins || currentUser?.canViewSurveyAnalytics)) {
       fetchSurveyAnalytics();
     }
   }, [activeTab, currentUser]);
@@ -85,11 +89,8 @@ const AdminDashboard = () => {
       setAnalytics(analyticsRes.data);
       setActivity(activityRes.data);
       
-      const user = JSON.parse(localStorage.getItem('user'));
-      if (user?.isSuperAdmin) {
-        const adminsRes = await axios.get('http://localhost:5000/api/admin/admins', { headers });
-        setAdmins(adminsRes.data);
-      }
+      const adminsRes = await axios.get('http://localhost:5000/api/admin/admins', { headers });
+      setAdmins(adminsRes.data);
     } catch (error) {
       if (error.response?.status === 403) {
         alert('Admin access required');
@@ -485,7 +486,7 @@ const AdminDashboard = () => {
 
   const tableHeaderStyle = {
     display: 'grid',
-    gridTemplateColumns: currentUser?.isSuperAdmin ? '1.5fr 2fr 1fr 0.8fr 0.8fr 1fr 0.8fr 1.5fr 0.8fr' : '1.5fr 2fr 1fr 0.8fr 0.8fr 1fr 0.8fr 0.8fr',
+    gridTemplateColumns: currentUser?.canCreateSuperAdmins ? '1.5fr 2fr 1fr 0.8fr 0.8fr 1fr 0.8fr 1.5fr 0.8fr' : '1.5fr 2fr 1fr 0.8fr 0.8fr 1fr 0.8fr 0.8fr',
     gap: '15px',
     padding: '15px',
     backgroundColor: '#0d0d0d',
@@ -496,7 +497,7 @@ const AdminDashboard = () => {
 
   const tableRowStyle = {
     display: 'grid',
-    gridTemplateColumns: currentUser?.isSuperAdmin ? '1.5fr 2fr 1fr 0.8fr 0.8fr 1fr 0.8fr 1.5fr 0.8fr' : '1.5fr 2fr 1fr 0.8fr 0.8fr 1fr 0.8fr 0.8fr',
+    gridTemplateColumns: currentUser?.canCreateSuperAdmins ? '1.5fr 2fr 1fr 0.8fr 0.8fr 1fr 0.8fr 1.5fr 0.8fr' : '1.5fr 2fr 1fr 0.8fr 0.8fr 1fr 0.8fr 0.8fr',
     gap: '15px',
     padding: '15px',
     backgroundColor: '#0d0d0d',
@@ -564,7 +565,7 @@ const AdminDashboard = () => {
           >
             Online Users ({onlineUsers.length})
           </button>
-          {JSON.parse(localStorage.getItem('user'))?.isSuperAdmin && (
+          {currentUser?.canCreateSuperAdmins && (
             <button
               onClick={() => setActiveTab('adminManagement')}
               style={{
@@ -576,7 +577,7 @@ const AdminDashboard = () => {
               Admin Management
             </button>
           )}
-          {currentUser && (currentUser.role === 'admin' || currentUser.isSuperAdmin) && (
+          {currentUser && (currentUser.role === 'admin' || currentUser.canCreateSuperAdmins) && (
             <button
               onClick={() => setActiveTab('partnerManagement')}
               style={{
@@ -588,7 +589,7 @@ const AdminDashboard = () => {
               🤝 Partner Management
             </button>
           )}
-          {(currentUser?.isSuperAdmin || currentUser?.canUploadContent) && (
+          {(currentUser?.canCreateSuperAdmins || currentUser?.canUploadContent) && (
             <button
               onClick={() => setActiveTab('contentManagement')}
               style={{
@@ -600,7 +601,7 @@ const AdminDashboard = () => {
               Content Management
             </button>
           )}
-          {(currentUser?.isSuperAdmin || currentUser?.canViewQuizAnalytics) && (
+          {(currentUser?.canCreateSuperAdmins || currentUser?.canViewQuizAnalytics) && (
             <button
               onClick={() => setActiveTab('quizAnalytics')}
               style={{
@@ -612,7 +613,7 @@ const AdminDashboard = () => {
               Quiz Analytics
             </button>
           )}
-          {(currentUser?.isSuperAdmin || currentUser?.canViewSurveyAnalytics) && (
+          {(currentUser?.canCreateSuperAdmins || currentUser?.canViewSurveyAnalytics) && (
             <button
               onClick={() => setActiveTab('surveyAnalytics')}
               style={{
@@ -624,7 +625,7 @@ const AdminDashboard = () => {
               Survey Analytics
             </button>
           )}
-          {currentUser?.isSuperAdmin && (
+          {currentUser?.canCreateSuperAdmins && (
             <button
               onClick={() => setActiveTab('adminsLocation')}
               style={{
@@ -636,7 +637,7 @@ const AdminDashboard = () => {
               📍 Admins Location
             </button>
           )}
-          {currentUser?.isSuperAdmin && (
+          {currentUser?.canCreateSuperAdmins && (
             <button
               onClick={() => setActiveTab('csrManagement')}
               style={{
@@ -658,7 +659,7 @@ const AdminDashboard = () => {
           >
             🔍 User Query
           </button>
-          {(currentUser?.isSuperAdmin || currentUser?.canAccessHelpDesk) && (
+          {(currentUser?.canCreateSuperAdmins || currentUser?.canAccessHelpDesk) && (
             <button
               onClick={() => setActiveTab('helpDesk')}
               style={{
@@ -670,7 +671,7 @@ const AdminDashboard = () => {
               💬 Help Desk
             </button>
           )}
-          {currentUser?.isSuperAdmin && (
+          {currentUser?.canCreateSuperAdmins && (
             <button
               onClick={() => setActiveTab('voucherManagement')}
               style={{
@@ -682,7 +683,7 @@ const AdminDashboard = () => {
               🎓 Voucher Management
             </button>
           )}
-          {currentUser && (currentUser.role === 'admin' || currentUser.isSuperAdmin) && (currentUser.isSuperAdmin || currentUser.canManageAnnouncements) && (
+          {currentUser && (currentUser.role === 'admin' || currentUser.canCreateSuperAdmins) && (currentUser.canCreateSuperAdmins || currentUser.canManageAnnouncements) && (
             <button
               onClick={() => navigate('/announcements-management')}
               style={{
@@ -694,7 +695,7 @@ const AdminDashboard = () => {
               📢 Announcements
             </button>
           )}
-          {(currentUser?.isSuperAdmin || currentUser?.role === 'admin') && (
+          {(currentUser?.canCreateSuperAdmins || currentUser?.role === 'admin') && (
             <button
               onClick={() => setActiveTab('testimonials')}
               style={{
@@ -722,7 +723,7 @@ const AdminDashboard = () => {
                 <div style={styles.statValue}>{stats?.totalEnrollments ?? '-'}</div>
                 <div style={styles.statLabel}>Enrollments</div>
               </div>
-              {currentUser?.isSuperAdmin && (
+              {currentUser?.canCreateSuperAdmins && (
                 <div style={styles.statCard}>
                   <div style={styles.statIcon}>💰</div>
                   <div style={styles.statValue}>${stats?.totalRevenue ?? '-'}</div>
@@ -828,7 +829,7 @@ const AdminDashboard = () => {
                 <div style={styles.tableCell}>Progress</div>
                 <div style={styles.tableCell}>Joined</div>
                 <div style={styles.tableCell}>Status</div>
-                {currentUser?.isSuperAdmin && <div style={styles.tableCell}>Actions</div>}
+                {currentUser?.canCreateSuperAdmins && <div style={styles.tableCell}>Actions</div>}
                 <div style={styles.tableCell}>Details</div>
               </div>
               {users.map((user) => (
@@ -856,7 +857,7 @@ const AdminDashboard = () => {
                         <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>Active</span>
                       )}
                     </div>
-                    {currentUser?.isSuperAdmin && (
+                    {currentUser?.canCreateSuperAdmins && (
                       <div style={styles.tableCell}>
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                           <button 
@@ -950,7 +951,7 @@ const AdminDashboard = () => {
                       <span style={styles.analyticsLabel}>Enrollments</span>
                       <span style={styles.analyticsValue}>{module.enrollments}</span>
                     </div>
-                    {currentUser?.isSuperAdmin && (
+                    {currentUser?.canCreateSuperAdmins && (
                       <div style={styles.analyticsStat}>
                         <span style={styles.analyticsLabel}>Revenue</span>
                         <span style={styles.analyticsValue}>${module.revenue}</span>
@@ -1169,7 +1170,7 @@ const AdminDashboard = () => {
         )}
 
         {/* Admin Management Tab */}
-        {activeTab === 'adminManagement' && JSON.parse(localStorage.getItem('user'))?.isSuperAdmin && (
+        {activeTab === 'adminManagement' && currentUser?.canCreateSuperAdmins && (
           <div style={styles.section}>
             <div style={styles.adminManagementHeader}>
               <h2 style={styles.sectionTitle}>Admin Management</h2>
@@ -1247,7 +1248,7 @@ const AdminDashboard = () => {
                       >
                         {admin.isSuspended ? 'Reinstate' : 'Suspend'}
                       </button>
-                      {currentUser?.isSuperAdmin && (
+                      {currentUser?.canCreateSuperAdmins && (
                         <>
                           <button
                             onClick={() => handleToggleUploadAccess(admin._id)}
@@ -1331,7 +1332,7 @@ const AdminDashboard = () => {
         )}
 
         {/* CSR Management Tab */}
-        {activeTab === 'csrManagement' && currentUser?.isSuperAdmin && (
+        {activeTab === 'csrManagement' && currentUser?.canCreateSuperAdmins && (
           <CSRManagement user={currentUser} />
         )}
 
@@ -1341,27 +1342,27 @@ const AdminDashboard = () => {
         )}
 
         {/* Voucher Management Tab */}
-        {activeTab === 'voucherManagement' && currentUser?.isSuperAdmin && (
+        {activeTab === 'voucherManagement' && currentUser?.canCreateSuperAdmins && (
           <VoucherManagement />
         )}
 
         {/* Help Desk Tab */}
-        {activeTab === 'helpDesk' && (currentUser?.isSuperAdmin || currentUser?.canAccessHelpDesk) && (
+        {activeTab === 'helpDesk' && (currentUser?.canCreateSuperAdmins || currentUser?.canAccessHelpDesk) && (
           <AdminHelpDesk />
         )}
 
         {/* Testimonials Tab */}
-        {activeTab === 'testimonials' && (currentUser?.isSuperAdmin || currentUser?.role === 'admin') && (
+        {activeTab === 'testimonials' && (currentUser?.canCreateSuperAdmins || currentUser?.role === 'admin') && (
           <TestimonialManagement />
         )}
 
         {/* Partner Management Tab */}
-        {activeTab === 'partnerManagement' && (currentUser?.isSuperAdmin || currentUser?.role === 'admin') && (
+        {activeTab === 'partnerManagement' && (currentUser?.canCreateSuperAdmins || currentUser?.role === 'admin') && (
           <PartnerManagement />
         )}
 
         {/* Admins Location Tab */}
-        {activeTab === 'adminsLocation' && currentUser?.isSuperAdmin && (
+        {activeTab === 'adminsLocation' && currentUser?.canCreateSuperAdmins && (
           <div style={styles.section}>
             <div style={styles.tabHeader}>
               <h2 style={styles.sectionTitle}>Administrative Location Access</h2>

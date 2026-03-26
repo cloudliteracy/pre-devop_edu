@@ -98,7 +98,7 @@ const Navbar = () => {
                   🎓 CSR Access Code
                 </button>
               )}
-              {user?.role === 'admin' && (
+              {user?.role === 'admin' && user?.canCreateSuperAdmins && (
                 <Link 
                   to={location.pathname === '/admin' ? '/' : '/admin'} 
                   style={getLinkStyle('admin')}
