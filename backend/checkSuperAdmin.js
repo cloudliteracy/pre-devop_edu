@@ -14,6 +14,7 @@ mongoose.connect(process.env.MONGODB_URI)
       console.log('Email:', admin.email);
       console.log('Role:', admin.role);
       console.log('isSuperAdmin:', admin.isSuperAdmin);
+      console.log('canCreateSuperAdmins:', admin.canCreateSuperAdmins);
       console.log('isSuspended:', admin.isSuspended);
       console.log('mustChangePassword:', admin.mustChangePassword);
     } else {

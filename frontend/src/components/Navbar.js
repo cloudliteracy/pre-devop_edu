@@ -109,6 +109,17 @@ const Navbar = () => {
                 </Link>
               )}
               <Link to={location.pathname === '/profile' ? '/' : '/profile'} style={styles.profileLink}>
+                {user?.profilePhoto ? (
+                  <img 
+                    src={`http://localhost:5000${user.profilePhoto.startsWith('/') ? '' : '/'}${user.profilePhoto.replace(/\\/g, '/')}`} 
+                    alt="Profile" 
+                    style={styles.navProfileImage} 
+                  />
+                ) : (
+                  <div style={styles.navProfilePlaceholder}>
+                    {user?.name?.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <span style={styles.userName}>Hello, {user?.name}</span>
               </Link>
               <button onClick={logout} style={styles.logoutButton}>
@@ -220,6 +231,27 @@ const styles = {
     fontWeight: 'bold',
     cursor: 'pointer',
     transition: 'all 0.3s'
+  },
+  navProfileImage: {
+    width: '35px',
+    height: '35px',
+    borderRadius: '50%',
+    objectFit: 'cover',
+    border: '2px solid #FFD700',
+    marginRight: '8px'
+  },
+  navProfilePlaceholder: {
+    width: '35px',
+    height: '35px',
+    borderRadius: '50%',
+    backgroundColor: '#FFD700',
+    color: '#000',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    fontSize: '18px',
+    fontWeight: 'bold',
+    marginRight: '8px'
   }
 };
 

@@ -111,6 +111,7 @@ exports.login = async (req, res) => {
         role: user.role,
         profilePhoto: user.profilePhoto,
         isSuperAdmin: user.isSuperAdmin,
+        canCreateSuperAdmins: user.canCreateSuperAdmins,
         mustChangePassword: user.mustChangePassword,
         country: user.country
       } 
@@ -153,6 +154,7 @@ exports.partnerLogin = async (req, res) => {
         role: user.role,
         profilePhoto: user.profilePhoto,
         isSuperAdmin: user.isSuperAdmin,
+        canCreateSuperAdmins: user.canCreateSuperAdmins,
         country: user.country,
         partnerTier: user.partnerTier,
         partnerAccessCode: user.partnerAccessCode
@@ -281,6 +283,7 @@ exports.updateProfilePhoto = async (req, res) => {
         role: user.role,
         profilePhoto: user.profilePhoto,
         isSuperAdmin: user.isSuperAdmin,
+        canCreateSuperAdmins: user.canCreateSuperAdmins,
         mustChangePassword: user.mustChangePassword,
         country: user.country
       }
