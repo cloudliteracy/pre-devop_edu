@@ -387,6 +387,8 @@ const AdminDashboard = () => {
     }
   };
 
+  const PREDEFINED_COUNTRIES = ['NG','ZA','CM','GH','KE','EG','ET','CI','MA','RW','SN','TZ','UG','ZW','US','CA','BR','MX','AR','CO','CL','GB','DE','FR','ES','IT','NL','CH','SE','NO','IE','IN','CN','JP','AU','NZ','PK','BD','SG','MY','AE','SA','KR'];
+
   const handleCopyPassword = async () => {
     try {
       await navigator.clipboard.writeText(tempPassword);
@@ -1399,7 +1401,7 @@ const AdminDashboard = () => {
                   <div style={styles.locationControl}>
                     <label style={styles.locLabel}>Authorized Country:</label>
                     <select 
-                      value={admin.authorizedCountry || 'Any'}
+                      value={(admin.authorizedCountry === 'Any' || !admin.authorizedCountry) ? 'Any' : (PREDEFINED_COUNTRIES.includes(admin.authorizedCountry) ? admin.authorizedCountry : 'Other')}
                       onChange={(e) => handleUpdateAuthorizedCountry(admin._id, e.target.value)}
                       style={styles.locSelect}
                     >
@@ -1462,7 +1464,7 @@ const AdminDashboard = () => {
                     {(admin.authorizedCountry === 'Other' || 
                       (admin.authorizedCountry && 
                        admin.authorizedCountry !== 'Any' && 
-                       !['NG','ZA','CM','GH','KE','EG','ET','CI','MA','RW','SN','TZ','UG','ZW','US','CA','BR','MX','AR','CO','CL','GB','DE','FR','ES','IT','NL','CH','SE','NO','IE','IN','CN','JP','AU','NZ','PK','BD','SG','MY','AE','SA','KR'].includes(admin.authorizedCountry)
+                       !PREDEFINED_COUNTRIES.includes(admin.authorizedCountry)
                       )) && (
                       <div style={styles.customCountryInputWrapper}>
                         <input
