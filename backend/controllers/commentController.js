@@ -18,7 +18,7 @@ exports.getComments = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const topLevelComments = await Comment.find({ parentComment: null })
-      .populate('user', 'name email role')
+      .populate('user', 'name email role profilePhoto')
       .populate('reactions.user', 'name')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -28,7 +28,7 @@ exports.getComments = async (req, res) => {
     // Get replies for each top-level comment
     for (let comment of topLevelComments) {
       const replies = await Comment.find({ parentComment: comment._id })
-        .populate('user', 'name email role')
+        .populate('user', 'name email role profilePhoto')
         .populate('reactions.user', 'name')
         .sort({ createdAt: 1 })
         .lean();
@@ -83,7 +83,7 @@ exports.createComment = async (req, res) => {
     });
 
     await comment.save();
-    await comment.populate('user', 'name email role');
+    await comment.populate('user', 'name email role profilePhoto');
 
     // Broadcast to all connected clients
     const io = req.app.get('io');
@@ -175,7 +175,7 @@ exports.editComment = async (req, res) => {
     comment.content = content.trim();
     comment.isEdited = true;
     await comment.save();
-    await comment.populate('user', 'name email role');
+    await comment.populate('user', 'name email role profilePhoto');
 
     const io = req.app.get('io');
     io.emit('comment-edited', comment);
