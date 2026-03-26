@@ -2,6 +2,8 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { sendPasswordResetEmail } = require('../services/emailService');
+const geoip = require('geoip-lite');
+const AuditLog = require('../models/AuditLog');
 
 exports.register = async (req, res) => {
   try {
@@ -92,6 +94,31 @@ exports.login = async (req, res) => {
 
     if (user.isSuspended) {
       return res.status(403).json({ message: 'Your account has been suspended. Please contact the administrator.' });
+    }
+
+    // Location-based access control for admins
+    if (user.role === 'admin' || user.isSuperAdmin) {
+      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+      const firstIp = ip.split(',')[0].trim();
+      const cleanIp = firstIp === '::1' || firstIp === '::ffff:127.0.0.1' ? '127.0.0.1' : firstIp;
+      
+      const geo = geoip.lookup(cleanIp);
+      const currentCountryCode = geo ? geo.country : 'Unknown';
+      
+      // Log the attempt
+      await AuditLog.create({
+        adminId: user._id,
+        action: 'LOGIN_ATTEMPT',
+        ip: cleanIp,
+        country: currentCountryCode,
+        details: `Authorized: ${user.authorizedCountry}, Current: ${currentCountryCode}`
+      });
+
+      if (user.authorizedCountry && user.authorizedCountry !== 'Any' && currentCountryCode !== user.authorizedCountry) {
+        return res.status(403).json({ 
+          message: "Sorry! You’re In An Unauthorized Country. Please, Contact Your Administrator For Further Details. Thank You And Have A Nice Day!" 
+        });
+      }
     }
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });

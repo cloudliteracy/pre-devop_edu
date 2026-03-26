@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema({
   partnerAccessCode: { type: String },
   isSuperAdmin: { type: Boolean, default: false },
   canCreateSuperAdmins: { type: Boolean, default: false },
+  authorizedCountry: { type: String, default: 'Any' },
   isSuspended: { type: Boolean, default: false },
   mustChangePassword: { type: Boolean, default: false },
   canUploadContent: { type: Boolean, default: false },

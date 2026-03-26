@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Module = require('../models/Module');
 const Payment = require('../models/Payment');
 const Progress = require('../models/Progress');
+const AuditLog = require('../models/AuditLog');
 
 exports.getDashboardStats = async (req, res) => {
   try {
@@ -819,5 +820,70 @@ exports.toggleHelpDeskAccess = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to update help desk access', error: error.message });
+  }
+};
+
+exports.updateAdminAuthorizedCountry = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { authorizedCountry } = req.body;
+    const requestingUser = req.user;
+
+    const targetAdmin = await User.findById(id);
+    if (!targetAdmin || (targetAdmin.role !== 'admin' && !targetAdmin.isSuperAdmin)) {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    // Role check: Only super admins can update locations
+    if (!requestingUser.isSuperAdmin) {
+      return res.status(403).json({ message: 'Not authorized to manage admin locations' });
+    }
+
+    // Primary super admin can manage everyone. 
+    // Created super admins can manage only normal admins.
+    if (targetAdmin.isSuperAdmin && !requestingUser.canCreateSuperAdmins) {
+      if (targetAdmin._id.toString() !== requestingUser._id.toString()) {
+        return res.status(403).json({ message: 'Not authorized to manage other super admin locations' });
+      }
+    }
+
+    targetAdmin.authorizedCountry = authorizedCountry;
+    await targetAdmin.save();
+
+    // Log the change
+    await AuditLog.create({
+      adminId: targetAdmin._id,
+      action: 'LOCATION_UPDATE',
+      details: `Authorized country updated to ${authorizedCountry} by ${requestingUser.name}`
+    });
+
+    res.json({ message: `Authorized country for ${targetAdmin.name} updated to ${authorizedCountry}`, admin: targetAdmin });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update authorized country', error: error.message });
+  }
+};
+
+exports.getAdminAuditLogs = async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const { limit = 50 } = req.query;
+
+    const query = {};
+    if (adminId && adminId !== 'all') {
+      try {
+        query.adminId = adminId;
+      } catch (e) {
+        // Invalid ID
+      }
+    }
+
+    const logs = await AuditLog.find(query)
+      .populate('adminId', 'name email role')
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit));
+
+    res.json(logs);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch audit logs', error: error.message });
   }
 };

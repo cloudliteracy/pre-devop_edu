@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { AuthContext, useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import socketService from '../services/socket';
 import ContentManagement from '../components/ContentManagement';
 import QuizAnalytics from '../components/QuizAnalytics';
@@ -39,6 +39,9 @@ const AdminDashboard = () => {
   const [surveys, setSurveys] = useState([]);
   const [userActionMessage, setUserActionMessage] = useState({ text: '', type: '' });
   const [copied, setCopied] = useState(false);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [showAuditLogsModal, setShowAuditLogsModal] = useState(false);
+  const [selectedAdminForLogs, setSelectedAdminForLogs] = useState(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -94,6 +97,44 @@ const AdminDashboard = () => {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateAuthorizedCountry = async (adminId, country) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.put(`http://localhost:5000/api/admin/admins/${adminId}/authorized-country`, 
+        { authorizedCountry: country },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setAdminMessage({ text: response.data.message, type: 'success' });
+      // Update local admins state
+      setAdmins(admins.map(a => a._id === adminId ? { ...a, authorizedCountry: country } : a));
+      
+      // Clear message after 3 seconds
+      setTimeout(() => setAdminMessage({ text: '', type: '' }), 3000);
+    } catch (error) {
+      setAdminMessage({ text: error.response?.data?.message || 'Update failed', type: 'error' });
+    }
+  };
+
+  const fetchAuditLogs = async (adminId = 'all') => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`http://localhost:5000/api/admin/audit-logs/${adminId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAuditLogs(response.data);
+      setShowAuditLogsModal(true);
+      if (adminId !== 'all') {
+        const admin = admins.find(a => a._id === adminId);
+        setSelectedAdminForLogs(admin || { name: 'Specific Admin' });
+      } else {
+        setSelectedAdminForLogs({ name: 'All Admins' });
+      }
+    } catch (error) {
+      console.error('Audit logs fetch error:', error);
+      alert('Failed to fetch audit logs');
     }
   };
 
@@ -578,6 +619,18 @@ const AdminDashboard = () => {
               }}
             >
               Survey Analytics
+            </button>
+          )}
+          {currentUser?.isSuperAdmin && (
+            <button
+              onClick={() => setActiveTab('adminsLocation')}
+              style={{
+                ...styles.tab,
+                backgroundColor: activeTab === 'adminsLocation' ? '#FFD700' : '#1a1a1a',
+                color: activeTab === 'adminsLocation' ? '#000' : '#FFD700'
+              }}
+            >
+              📍 Admins Location
             </button>
           )}
           {currentUser?.isSuperAdmin && (
@@ -1302,6 +1355,188 @@ const AdminDashboard = () => {
         {/* Partner Management Tab */}
         {activeTab === 'partnerManagement' && (currentUser?.isSuperAdmin || currentUser?.role === 'admin') && (
           <PartnerManagement />
+        )}
+
+        {/* Admins Location Tab */}
+        {activeTab === 'adminsLocation' && currentUser?.isSuperAdmin && (
+          <div style={styles.section}>
+            <div style={styles.tabHeader}>
+              <h2 style={styles.sectionTitle}>Administrative Location Access</h2>
+              <button 
+                onClick={() => fetchAuditLogs('all')} 
+                style={styles.viewLogsBtn}
+              >
+                📜 View Universal Audit Logs
+              </button>
+            </div>
+            
+            <p style={styles.helperText}>
+              Manage authorized login countries for each administrator. If an admin attempts to log in from a non-authorized country, access will be strictly denied.
+            </p>
+
+            <div style={styles.adminsGrid}>
+              {admins.map((admin) => (
+                <div key={admin._id} style={styles.locationCard}>
+                  <div style={styles.adminHeader}>
+                    {admin.profilePhoto ? (
+                      <img 
+                        src={`http://localhost:5000${(admin.profilePhoto || '').startsWith('/') ? '' : '/'}${(admin.profilePhoto || '').replace(/\\/g, '/')}`} 
+                        alt={admin.name} 
+                        style={styles.adminMiniPhoto} 
+                      />
+                    ) : (
+                      <div style={styles.adminPhotoPlaceholder}>
+                        {admin.name?.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div style={styles.adminBasicInfo}>
+                      <span style={styles.adminNameLoc}>{admin.name}</span>
+                      <span style={styles.adminEmailLoc}>{admin.email}</span>
+                    </div>
+                  </div>
+
+                  <div style={styles.locationControl}>
+                    <label style={styles.locLabel}>Authorized Country:</label>
+                    <select 
+                      value={admin.authorizedCountry || 'Any'}
+                      onChange={(e) => handleUpdateAuthorizedCountry(admin._id, e.target.value)}
+                      style={styles.locSelect}
+                    >
+                      <option value="Any">Any Location (Default)</option>
+                      <optgroup label="Africa">
+                        <option value="NG">Nigeria (NG)</option>
+                        <option value="ZA">South Africa (ZA)</option>
+                        <option value="CM">Cameroon (CM)</option>
+                        <option value="GH">Ghana (GH)</option>
+                        <option value="KE">Kenya (KE)</option>
+                        <option value="EG">Egypt (EG)</option>
+                        <option value="ET">Ethiopia (ET)</option>
+                        <option value="CI">Ivory Coast (CI)</option>
+                        <option value="MA">Morocco (MA)</option>
+                        <option value="RW">Rwanda (RW)</option>
+                        <option value="SN">Senegal (SN)</option>
+                        <option value="TZ">Tanzania (TZ)</option>
+                        <option value="UG">Uganda (UG)</option>
+                        <option value="ZW">Zimbabwe (ZW)</option>
+                      </optgroup>
+                      <optgroup label="Americas">
+                        <option value="US">United States (US)</option>
+                        <option value="CA">Canada (CA)</option>
+                        <option value="BR">Brazil (BR)</option>
+                        <option value="MX">Mexico (MX)</option>
+                        <option value="AR">Argentina (AR)</option>
+                        <option value="CO">Colombia (CO)</option>
+                        <option value="CL">Chile (CL)</option>
+                      </optgroup>
+                      <optgroup label="Europe">
+                        <option value="GB">United Kingdom (GB)</option>
+                        <option value="DE">Germany (DE)</option>
+                        <option value="FR">France (FR)</option>
+                        <option value="ES">Spain (ES)</option>
+                        <option value="IT">Italy (IT)</option>
+                        <option value="NL">Netherlands (NL)</option>
+                        <option value="CH">Switzerland (CH)</option>
+                        <option value="SE">Sweden (SE)</option>
+                        <option value="NO">Norway (NO)</option>
+                        <option value="IE">Ireland (IE)</option>
+                      </optgroup>
+                      <optgroup label="Asia & Oceania">
+                        <option value="IN">India (IN)</option>
+                        <option value="CN">China (CN)</option>
+                        <option value="JP">Japan (JP)</option>
+                        <option value="AU">Australia (AU)</option>
+                        <option value="NZ">New Zealand (NZ)</option>
+                        <option value="PK">Pakistan (PK)</option>
+                        <option value="BD">Bangladesh (BD)</option>
+                        <option value="SG">Singapore (SG)</option>
+                        <option value="MY">Malaysia (MY)</option>
+                        <option value="AE">United Arab Emirates (AE)</option>
+                        <option value="SA">Saudi Arabia (SA)</option>
+                        <option value="KR">South Korea (KR)</option>
+                      </optgroup>
+                    </select>
+                  </div>
+
+                  <div style={styles.cardActions}>
+                    <button 
+                      onClick={() => fetchAuditLogs(admin._id)} 
+                      style={styles.adminLogsBtn}
+                    >
+                      📊 View Access History
+                    </button>
+                    <div style={styles.statusBox}>
+                      <div style={{
+                        ...styles.statusDot,
+                        backgroundColor: (admin.authorizedCountry && admin.authorizedCountry !== 'Any') ? '#4CAF50' : '#888'
+                      }}></div>
+                      <span style={styles.statusText}>
+                        {(admin.authorizedCountry && admin.authorizedCountry !== 'Any') ? 'Strict Mode' : 'Open Access'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Audit Logs Modal */}
+        {showAuditLogsModal && (
+          <div style={styles.modalOverlay} onClick={() => setShowAuditLogsModal(false)}>
+            <div style={{...styles.modalContent, maxWidth: '800px'}} onClick={(e) => e.stopPropagation()}>
+              <div style={styles.modalHeader}>
+                <h2 style={styles.modalTitle}>Security Audit Logs</h2>
+                <span style={styles.selectedAdminBadge}>{selectedAdminForLogs?.name}</span>
+              </div>
+              
+              <div style={styles.logsTableContainer}>
+                {auditLogs.length > 0 ? (
+                  <table style={styles.logsTable}>
+                    <thead>
+                      <tr>
+                        <th style={styles.th}>Timestamp</th>
+                        <th style={styles.th}>Admin</th>
+                        <th style={styles.th}>Action</th>
+                        <th style={styles.th}>Location (IP)</th>
+                        <th style={styles.th}>Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {auditLogs.map((log) => (
+                        <tr key={log._id} style={styles.tr}>
+                          <td style={styles.td}>{new Date(log.createdAt).toLocaleString()}</td>
+                          <td style={styles.td}>{log.adminId?.name || 'N/A'}</td>
+                          <td style={styles.td}>
+                            <span style={{
+                              ...styles.actionBadge,
+                              backgroundColor: log.action === 'LOGIN_ATTEMPT' ? '#1a1a1a' : '#2d1a1a',
+                              color: log.action === 'LOGIN_ATTEMPT' ? '#FFD700' : '#ff4444',
+                              border: `1px solid ${log.action === 'LOGIN_ATTEMPT' ? '#FFD700' : '#ff4444'}`
+                            }}>
+                              {log.action}
+                            </span>
+                          </td>
+                          <td style={styles.td}>
+                            <span style={styles.countryCode}>{log.country}</span>
+                            <span style={styles.ipText}>({log.ip || 'Local'})</span>
+                          </td>
+                          <td style={styles.td}>{log.details}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div style={styles.noLogs}>No logs found for this selection.</div>
+                )}
+              </div>
+
+              <div style={styles.modalButtons}>
+                <button onClick={() => setShowAuditLogsModal(false)} style={styles.submitButton}>
+                  Close Logs
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Create Admin Modal */}
@@ -2221,6 +2456,199 @@ const styles = {
     color: '#999',
     fontSize: '14px',
     textAlign: 'center',
+    fontStyle: 'italic'
+  },
+  tabHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px'
+  },
+  viewLogsBtn: {
+    padding: '8px 16px',
+    backgroundColor: '#1a1a1a',
+    color: '#FFD700',
+    border: '1px solid #FFD700',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    transition: '0.3s'
+  },
+  helperText: {
+    color: '#999',
+    fontSize: '14px',
+    marginBottom: '25px',
+    lineHeight: '1.5'
+  },
+  locationCard: {
+    backgroundColor: '#0d0d0d',
+    border: '1px solid #333',
+    borderRadius: '12px',
+    padding: '20px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px'
+  },
+  adminHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '15px'
+  },
+  adminMiniPhoto: {
+    width: '45px',
+    height: '45px',
+    borderRadius: '50%',
+    objectFit: 'cover',
+    border: '1.5px solid #FFD700'
+  },
+  adminPhotoPlaceholder: {
+    width: '45px',
+    height: '45px',
+    borderRadius: '50%',
+    backgroundColor: '#FFD700',
+    color: '#000',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    fontSize: '20px',
+    fontWeight: 'bold'
+  },
+  adminBasicInfo: {
+    display: 'flex',
+    flexDirection: 'column'
+  },
+  adminNameLoc: {
+    color: '#FFD700',
+    fontSize: '16px',
+    fontWeight: 'bold'
+  },
+  adminEmailLoc: {
+    color: '#666',
+    fontSize: '13px'
+  },
+  locationControl: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px'
+  },
+  locLabel: {
+    color: '#999',
+    fontSize: '13px',
+    fontWeight: '500'
+  },
+  locSelect: {
+    width: '100%',
+    padding: '10px',
+    backgroundColor: '#1a1a1a',
+    border: '1px solid #333',
+    borderRadius: '6px',
+    color: '#FFD700',
+    fontSize: '14px',
+    outline: 'none',
+    cursor: 'pointer'
+  },
+  cardActions: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: '5px',
+    paddingTop: '15px',
+    borderTop: '1px solid #222'
+  },
+  adminLogsBtn: {
+    background: 'none',
+    border: 'none',
+    color: '#FFD700',
+    fontSize: '13px',
+    textDecoration: 'underline',
+    cursor: 'pointer',
+    padding: 0
+  },
+  statusBox: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  },
+  statusDot: {
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%'
+  },
+  statusText: {
+    color: '#999',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    textTransform: 'uppercase'
+  },
+  modalHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px',
+    paddingBottom: '15px',
+    borderBottom: '1px solid #333'
+  },
+  selectedAdminBadge: {
+    backgroundColor: '#FFD700',
+    color: '#000',
+    padding: '4px 12px',
+    borderRadius: '20px',
+    fontSize: '12px',
+    fontWeight: 'bold'
+  },
+  logsTableContainer: {
+    maxHeight: '400px',
+    overflowY: 'auto',
+    marginBottom: '20px',
+    backgroundColor: '#0d0d0d',
+    borderRadius: '8px',
+    border: '1px solid #333'
+  },
+  logsTable: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: '13px',
+    color: '#ccc'
+  },
+  th: {
+    textAlign: 'left',
+    padding: '12px',
+    backgroundColor: '#1a1a1a',
+    color: '#FFD700',
+    fontSize: '12px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    borderBottom: '1px solid #333',
+    position: 'sticky',
+    top: 0
+  },
+  tr: {
+    borderBottom: '1px solid #222'
+  },
+  td: {
+    padding: '12px',
+    verticalAlign: 'middle'
+  },
+  actionBadge: {
+    padding: '2px 8px',
+    borderRadius: '12px',
+    fontSize: '10px',
+    fontWeight: 'bold'
+  },
+  countryCode: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginRight: '5px'
+  },
+  ipText: {
+    color: '#666',
+    fontSize: '11px'
+  },
+  noLogs: {
+    padding: '40px',
+    textAlign: 'center',
+    color: '#666',
     fontStyle: 'italic'
   }
 };
