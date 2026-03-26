@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
+import CSRCodeEntry from '../components/CSRCodeEntry';
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '', partnerAccessCode: '' });
@@ -11,6 +12,7 @@ const Login = () => {
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const [draggedText, setDraggedText] = useState('');
   const { login } = useContext(AuthContext);
+  const [showCSRModal, setShowCSRModal] = useState(false);
   const navigate = useNavigate();
 
   const handleDragStart = (e) => {
@@ -181,7 +183,19 @@ const Login = () => {
         <p style={styles.footer}>
           Don't have an account? <Link to="/register" style={styles.link}>Register</Link>
         </p>
+
+        <div style={styles.csrContainer}>
+          <p style={styles.csrText}>Have a CSR Access Code?</p>
+          <button 
+            type="button"
+            onClick={() => setShowCSRModal(true)}
+            style={styles.csrButton}
+          >
+            🎓 Use CSR Access Code
+          </button>
+        </div>
       </div>
+      {showCSRModal && <CSRCodeEntry onClose={() => setShowCSRModal(false)} />}
     </div>
   );
 };
@@ -353,7 +367,31 @@ const styles = {
   footer: {
     textAlign: 'center',
     color: '#999',
-    fontSize: '14px'
+    fontSize: '14px',
+    marginBottom: '20px'
+  },
+  csrContainer: {
+    textAlign: 'center',
+    borderTop: '1px solid #333',
+    paddingTop: '20px',
+    marginTop: '10px'
+  },
+  csrText: {
+    color: '#999',
+    fontSize: '14px',
+    marginBottom: '10px'
+  },
+  csrButton: {
+    backgroundColor: 'transparent',
+    color: '#FFD700',
+    border: '1px solid #FFD700',
+    padding: '10px 20px',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: 'all 0.3s',
+    width: '100%'
   }
 };
 
