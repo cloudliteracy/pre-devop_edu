@@ -43,6 +43,7 @@ const AdminDashboard = () => {
   const [showAuditLogsModal, setShowAuditLogsModal] = useState(false);
   const [selectedAdminForLogs, setSelectedAdminForLogs] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [customCountryInputs, setCustomCountryInputs] = useState({}); // {adminId: 'customValue'}
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -1454,7 +1455,31 @@ const AdminDashboard = () => {
                         <option value="SA">Saudi Arabia (SA)</option>
                         <option value="KR">South Korea (KR)</option>
                       </optgroup>
+                      <option value="Other">Other (Type below)...</option>
                     </select>
+
+                    {/* Show input if "Other" is selected or if existing value is not in any predefined group */}
+                    {(admin.authorizedCountry === 'Other' || 
+                      (admin.authorizedCountry && 
+                       admin.authorizedCountry !== 'Any' && 
+                       !['NG','ZA','CM','GH','KE','EG','ET','CI','MA','RW','SN','TZ','UG','ZW','US','CA','BR','MX','AR','CO','CL','GB','DE','FR','ES','IT','NL','CH','SE','NO','IE','IN','CN','JP','AU','NZ','PK','BD','SG','MY','AE','SA','KR'].includes(admin.authorizedCountry)
+                      )) && (
+                      <div style={styles.customCountryInputWrapper}>
+                        <input
+                          type="text"
+                          placeholder="Type country name or code..."
+                          value={customCountryInputs[admin._id] !== undefined ? customCountryInputs[admin._id] : (admin.authorizedCountry === 'Other' ? '' : admin.authorizedCountry)}
+                          onChange={(e) => setCustomCountryInputs({...customCountryInputs, [admin._id]: e.target.value})}
+                          style={styles.customLocInput}
+                        />
+                        <button 
+                          onClick={() => handleUpdateAuthorizedCountry(admin._id, customCountryInputs[admin._id])}
+                          style={styles.saveLocBtn}
+                        >
+                          Save
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div style={styles.cardActions}>
@@ -2546,6 +2571,31 @@ const styles = {
     color: '#FFD700',
     fontSize: '14px',
     outline: 'none',
+    cursor: 'pointer'
+  },
+  customCountryInputWrapper: {
+    display: 'flex',
+    gap: '8px',
+    marginTop: '5px'
+  },
+  customLocInput: {
+    flex: 1,
+    padding: '8px',
+    backgroundColor: '#000',
+    border: '1px solid #FFD700',
+    borderRadius: '4px',
+    color: '#fff',
+    fontSize: '13px',
+    outline: 'none'
+  },
+  saveLocBtn: {
+    backgroundColor: '#FFD700',
+    color: '#000',
+    border: 'none',
+    padding: '4px 12px',
+    borderRadius: '4px',
+    fontSize: '12px',
+    fontWeight: 'bold',
     cursor: 'pointer'
   },
   cardActions: {
