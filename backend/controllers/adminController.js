@@ -224,7 +224,7 @@ exports.createAdmin = async (req, res) => {
   try {
     console.log('Create admin request:', req.body);
     console.log('req.user:', req.user);
-    const { name, email } = req.body;
+    const { name, email, isSuperAdmin, country } = req.body;
     
     if (!name || !email) {
       return res.status(400).json({ message: 'Name and email are required' });
@@ -232,10 +232,14 @@ exports.createAdmin = async (req, res) => {
     
     const requestingUser = req.user;
     console.log('Requesting user isSuperAdmin:', requestingUser?.isSuperAdmin);
+    console.log('Requesting user canCreateSuperAdmins:', requestingUser?.canCreateSuperAdmins);
 
     if (!requestingUser.isSuperAdmin) {
       return res.status(403).json({ message: 'Only super admin can create new admins' });
     }
+
+    // Only allow setting isSuperAdmin if the requester has canCreateSuperAdmins: true
+    const shouldBeSuperAdmin = isSuperAdmin && requestingUser.canCreateSuperAdmins;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -248,9 +252,11 @@ exports.createAdmin = async (req, res) => {
     const newAdmin = new User({
       name,
       email,
+      country,
       password: tempPassword,
       role: 'admin',
-      isSuperAdmin: false,
+      isSuperAdmin: !!shouldBeSuperAdmin,
+      canCreateSuperAdmins: false, // New admins (even super admins) cannot create other super admins
       mustChangePassword: true
     });
 
@@ -294,11 +300,14 @@ exports.toggleAdminSuspension = async (req, res) => {
       return res.status(404).json({ message: 'Admin not found' });
     }
 
+    // Restriction: Only primary super admin (canCreateSuperAdmins: true) can suspend/delete other super admins
     if (targetAdmin.isSuperAdmin) {
-      return res.status(403).json({ message: 'Cannot suspend super admin' });
+      if (!requestingUser.canCreateSuperAdmins || targetAdmin._id.toString() === requestingUser._id.toString()) {
+        return res.status(403).json({ message: 'Cannot suspend this super admin' });
+      }
     }
 
-    if (requestingUser.role !== 'admin') {
+    if (requestingUser.role !== 'admin' && !requestingUser.isSuperAdmin) {
       return res.status(403).json({ message: 'Only admins can suspend/reinstate admins' });
     }
 
@@ -343,8 +352,11 @@ exports.deleteAdmin = async (req, res) => {
       return res.status(404).json({ message: 'Admin not found' });
     }
 
+    // Restriction: Only primary super admin (canCreateSuperAdmins: true) can suspend/delete other super admins
     if (targetAdmin.isSuperAdmin) {
-      return res.status(403).json({ message: 'Cannot delete super admin' });
+      if (!requestingUser.canCreateSuperAdmins || targetAdmin._id.toString() === requestingUser._id.toString()) {
+        return res.status(403).json({ message: 'Cannot delete this super admin' });
+      }
     }
 
     // Force logout the admin via socket before deletion

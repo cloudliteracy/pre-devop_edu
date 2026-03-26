@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { AuthContext, useAuth } from '../context/AuthContext';
 import socketService from '../services/socket';
 import ContentManagement from '../components/ContentManagement';
 import QuizAnalytics from '../components/QuizAnalytics';
@@ -17,6 +18,7 @@ import * as adminService from '../services/admin';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const { updateUser } = useAuth();
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [analytics, setAnalytics] = useState([]);
@@ -30,12 +32,15 @@ const AdminDashboard = () => {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [showCreateAdminModal, setShowCreateAdminModal] = useState(false);
-  const [newAdminForm, setNewAdminForm] = useState({ name: '', email: '' });
+  const [newAdminForm, setNewAdminForm] = useState({ name: '', email: '', isSuperAdmin: false, country: '' });
   const [tempPassword, setTempPassword] = useState('');
   const [adminMessage, setAdminMessage] = useState({ text: '', type: '' });
   const [currentUser, setCurrentUser] = useState(null);
   const [surveys, setSurveys] = useState([]);
   const [userActionMessage, setUserActionMessage] = useState({ text: '', type: '' });
+  const [copied, setCopied] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -159,7 +164,7 @@ const AdminDashboard = () => {
       
       setTempPassword(data.temporaryPassword);
       setAdminMessage({ text: 'Admin created successfully! Save the temporary password.', type: 'success' });
-      setNewAdminForm({ name: '', email: '' });
+      setNewAdminForm({ name: '', email: '', isSuperAdmin: false, country: '' });
       
       const adminsRes = await axios.get('http://localhost:5000/api/admin/admins', { 
         headers: { Authorization: `Bearer ${token}` } 
@@ -244,7 +249,7 @@ const AdminDashboard = () => {
 
   const closeCreateAdminModal = () => {
     setShowCreateAdminModal(false);
-    setNewAdminForm({ name: '', email: '' });
+    setNewAdminForm({ name: '', email: '', isSuperAdmin: false, country: '' });
     setTempPassword('');
     setAdminMessage({ text: '', type: '' });
   };
@@ -337,6 +342,49 @@ const AdminDashboard = () => {
         text: error.response?.data?.message || 'Failed to update help desk access', 
         type: 'error' 
       });
+    }
+  };
+
+  const handleCopyPassword = async () => {
+    try {
+      await navigator.clipboard.writeText(tempPassword);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy password:', err);
+    }
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('profilePhoto', file);
+
+      const { data } = await axios.post('http://localhost:5000/api/auth/update-profile-photo', formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      updateUser(data.user);
+      setCurrentUser(data.user);
+      fetchDashboardData();
+      alert('Profile photo updated successfully!');
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to update photo.');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -873,6 +921,40 @@ const AdminDashboard = () => {
             <h2 style={styles.sectionTitle}>Account Settings</h2>
             
             <div style={styles.settingsCard}>
+              <h3 style={styles.settingsSubtitle}>Profile Selection</h3>
+              <div style={styles.profileUploadSection}>
+                <div style={styles.profilePreviewContainer}>
+                  {currentUser?.profilePhoto ? (
+                    <img 
+                      src={`http://localhost:5000${currentUser.profilePhoto.startsWith('/') ? '' : '/'}${currentUser.profilePhoto.replace(/\\/g, '/')}`}
+                      alt="Profile" 
+                      style={{ ...styles.profilePreview, opacity: uploading ? 0.5 : 1 }} 
+                    />
+                  ) : (
+                    <div style={styles.profilePlaceholderIcon}>
+                      {currentUser?.name?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    style={{ display: 'none' }}
+                    ref={fileInputRef}
+                  />
+                  <button 
+                    onClick={() => fileInputRef.current.click()}
+                    style={styles.uploadBtn}
+                    disabled={uploading}
+                  >
+                    {uploading ? 'Uploading...' : 'Change Photo'}
+                  </button>
+                </div>
+                <p style={styles.uploadNote}>Upload a professional photo for your admin profile.</p>
+              </div>
+            </div>
+
+            <div style={styles.settingsCard}>
               <h3 style={styles.settingsSubtitle}>Change Password</h3>
               <form onSubmit={handlePasswordChange} style={styles.passwordForm}>
                 <div style={styles.formGroup}>
@@ -1084,7 +1166,7 @@ const AdminDashboard = () => {
                     </div>
                   </div>
 
-                  {!admin.isSuperAdmin && (
+                  {(!admin.isSuperAdmin || (currentUser?.canCreateSuperAdmins && admin._id !== currentUser?.id)) && (
                     <div style={styles.adminActions}>
                       <button
                         onClick={() => handleToggleSuspension(admin._id)}
@@ -1239,6 +1321,32 @@ const AdminDashboard = () => {
                     />
                   </div>
 
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Country</label>
+                    <input
+                      type="text"
+                      placeholder="Enter country"
+                      value={newAdminForm.country}
+                      onChange={(e) => setNewAdminForm({...newAdminForm, country: e.target.value})}
+                      style={styles.input}
+                    />
+                  </div>
+
+                  {currentUser?.canCreateSuperAdmins && (
+                    <div style={styles.formGroupCheckbox}>
+                      <input
+                        type="checkbox"
+                        id="isSuperAdmin"
+                        checked={newAdminForm.isSuperAdmin}
+                        onChange={(e) => setNewAdminForm({...newAdminForm, isSuperAdmin: e.target.checked})}
+                        style={styles.checkbox}
+                      />
+                      <label htmlFor="isSuperAdmin" style={styles.checkboxLabel}>
+                        Assign as Super Admin
+                      </label>
+                    </div>
+                  )}
+
                   {adminMessage.text && !tempPassword && (
                     <div style={{
                       ...styles.message,
@@ -1264,7 +1372,18 @@ const AdminDashboard = () => {
                   </p>
                   <div style={styles.passwordBox}>
                     <span style={styles.passwordLabel}>Temporary Password:</span>
-                    <span style={styles.passwordValue}>{tempPassword}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={styles.passwordValue}>{tempPassword}</span>
+                      <button 
+                        onClick={handleCopyPassword}
+                        style={{
+                          ...styles.copyButton,
+                          backgroundColor: copied ? '#4CAF50' : '#FFD700'
+                        }}
+                      >
+                        {copied ? 'Copied!' : 'Copy'}
+                      </button>
+                    </div>
                   </div>
                   <p style={styles.passwordNote}>
                     The new admin must change this password on first login.
@@ -1397,6 +1516,83 @@ const styles = {
     fontSize: '28px',
     marginBottom: '25px',
     fontWeight: 'bold'
+  },
+  formGroupCheckbox: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    marginBottom: '20px',
+    cursor: 'pointer'
+  },
+  checkbox: {
+    width: '20px',
+    height: '20px',
+    cursor: 'pointer',
+    accentColor: '#FFD700'
+  },
+  checkboxLabel: {
+    color: '#ccc',
+    fontSize: '16px',
+    cursor: 'pointer',
+    userSelect: 'none'
+  },
+  profileUploadSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '20px',
+    padding: '20px 0'
+  },
+  profilePreviewContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '15px'
+  },
+  profilePreview: {
+    width: '100px',
+    height: '100px',
+    borderRadius: '50%',
+    objectFit: 'cover',
+    border: '3px solid #FFD700'
+  },
+  profilePlaceholderIcon: {
+    width: '100px',
+    height: '100px',
+    borderRadius: '50%',
+    backgroundColor: '#FFD700',
+    color: '#000',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    fontSize: '40px',
+    fontWeight: 'bold'
+  },
+  uploadBtn: {
+    padding: '10px 20px',
+    backgroundColor: '#FFD700',
+    color: '#000',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: 'all 0.3s'
+  },
+  uploadNote: {
+    color: '#888',
+    fontSize: '13px',
+    textAlign: 'center'
+  },
+  copyButton: {
+    padding: '4px 8px',
+    border: 'none',
+    borderRadius: '4px',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: 'all 0.3s',
+    color: '#000'
   },
   subsectionTitle: {
     color: '#FFD700',

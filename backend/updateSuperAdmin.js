@@ -11,6 +11,7 @@ const updateSuperAdmin = async () => {
     
     if (admin) {
       admin.isSuperAdmin = true;
+      admin.canCreateSuperAdmins = true;
       admin.isSuspended = false;
       admin.mustChangePassword = false;
       await admin.save();
