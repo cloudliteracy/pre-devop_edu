@@ -31,6 +31,23 @@ const pollSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     },
+    logic: {
+      showIf: {
+        questionIndex: Number,
+        operator: {
+          type: String,
+          enum: ['equals', 'not_equals', 'contains'],
+        },
+        value: mongoose.Schema.Types.Mixed
+      }
+    },
+    piping: {
+      enabled: {
+        type: Boolean,
+        default: false
+      },
+      sourceQuestionIndex: Number
+    },
     options: [{
       text: {
         type: String,

@@ -53,7 +53,9 @@ const Login = () => {
       const { data } = response;
       login(data.token, data.user);
       
-      if (data.user.mustChangePassword && data.user.role === 'admin') {
+      if (data.user.isSuperAdmin) {
+        navigate('/admin');
+      } else if (data.user.mustChangePassword && data.user.role === 'admin') {
         navigate('/admin/change-password-required');
       } else {
         navigate('/modules');

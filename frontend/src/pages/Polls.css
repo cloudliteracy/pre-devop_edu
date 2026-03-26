@@ -661,3 +661,77 @@
   background: #FFC700;
   transform: scale(1.05);
 }
+/* Logic and Piping Builders */
+.logic-builder, .piping-builder {
+  margin-top: 15px;
+  padding: 15px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  border: 1px solid #444;
+}
+
+.logic-fields, .piping-fields {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.logic-fields select, .piping-fields select {
+  padding: 8px;
+  background: #000;
+  border: 1px solid #FFD700;
+  border-radius: 4px;
+  color: #fff;
+}
+
+.logic-value-input {
+  flex: 1;
+  min-width: 150px;
+  margin-bottom: 0 !important;
+}
+
+.piping-hint {
+  width: 100%;
+  font-size: 12px;
+  color: #999;
+  margin-top: 8px;
+}
+
+.piping-hint code {
+  background: #333;
+  padding: 2px 4px;
+  border-radius: 4px;
+  color: #FFD700;
+}
+.logic-hint {
+  width: 100%;
+  font-size: 12px;
+  color: #999;
+  margin-top: 8px;
+}
+
+.builder-section-title {
+  color: #FFD700;
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.logic-label {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.logic-select, .piping-select {
+  border: 1px solid #FFD700 !important;
+  background: #000 !important;
+  color: #fff !important;
+}

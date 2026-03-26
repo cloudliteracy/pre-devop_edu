@@ -12,7 +12,7 @@ const helpDeskChatSchema = new mongoose.Schema({
   },
   userType: {
     type: String,
-    enum: ['guest', 'learner'],
+    enum: ['guest', 'learner', 'partner'],
     required: true
   },
   guestName: String,

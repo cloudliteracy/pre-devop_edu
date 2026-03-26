@@ -119,9 +119,14 @@ exports.verifyStripePayment = async (req, res) => {
         if (payment.isPartnerPurchase) {
           const crypto = require('crypto');
           const accessCode = 'PTR-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+          
+          const targetUser = await User.findById(userId);
+          // NEW LOGIC: Admin stays Admin, Learners become Partner
+          const newRole = (targetUser.role === 'admin' || targetUser.isSuperAdmin) ? 'admin' : 'partner';
+          
           await User.findByIdAndUpdate(userId, {
             $set: { 
-              role: 'partner', 
+              role: newRole, 
               partnerTier: payment.partnerTier,
               partnerAccessCode: accessCode,
               isCsrUser: true 

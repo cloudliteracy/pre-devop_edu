@@ -19,7 +19,9 @@ const Polls = () => {
     questionText: '',
     questionType: 'single',
     isRequired: false,
-    options: ['', '']
+    options: ['', ''],
+    logic: undefined,
+    piping: { enabled: false, sourceQuestionIndex: 0 }
   }]);
   const [duration, setDuration] = useState('1d');
   const [loading, setLoading] = useState(false);
@@ -122,7 +124,9 @@ const Polls = () => {
       questionText: q.questionText,
       questionType: q.questionType,
       isRequired: q.isRequired || false,
-      options: q.options.map(opt => opt.text)
+      options: q.options.map(opt => opt.text),
+      logic: q.logic || undefined,
+      piping: q.piping || { enabled: false, sourceQuestionIndex: 0 }
     })));
     setShowCreateForm(true);
   };
@@ -136,7 +140,14 @@ const Polls = () => {
   };
 
   const addQuestion = () => {
-    setQuestions([...questions, { questionText: '', questionType: 'single', isRequired: false, options: ['', ''] }]);
+    setQuestions([...questions, { 
+      questionText: '', 
+      questionType: 'single', 
+      isRequired: false, 
+      options: ['', ''],
+      logic: undefined,
+      piping: { enabled: false, sourceQuestionIndex: 0 }
+    }]);
   };
 
   const removeQuestion = (index) => {
@@ -298,7 +309,6 @@ const Polls = () => {
                     <option value="file_upload">File Upload (PDF/Video/Links)</option>
                   </select>
                 </div>
-
                 <div className="required-toggle">
                   <label className="toggle-label">
                     <input
@@ -309,6 +319,91 @@ const Polls = () => {
                     <span className="toggle-text">Required Question</span>
                   </label>
                 </div>
+
+                {/* Question Logic & Branching */}
+                {qIndex > 0 && (
+                  <div className="logic-builder">
+                    <h5 className="builder-section-title">🔀 Logic & Branching</h5>
+                    <label className="toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={!!question.logic}
+                        onChange={(e) => {
+                          const val = e.target.checked 
+                            ? { showIf: { questionIndex: qIndex - 1, operator: 'equals', value: '' } } 
+                            : undefined;
+                          updateQuestion(qIndex, 'logic', val);
+                        }}
+                      />
+                      <span className="toggle-text">Enable Skip Logic</span>
+                    </label>
+                    {question.logic && (
+                      <div className="logic-fields">
+                        <span className="logic-label">Show if Question {question.logic.showIf.questionIndex + 1}</span>
+                        <select
+                          className="logic-select"
+                          value={question.logic.showIf.operator}
+                          onChange={(e) => {
+                            const newLogic = { ...question.logic };
+                            newLogic.showIf.operator = e.target.value;
+                            updateQuestion(qIndex, 'logic', newLogic);
+                          }}
+                        >
+                          <option value="equals">Equals</option>
+                          <option value="not_equals">Not Equals</option>
+                          <option value="contains">Contains</option>
+                        </select>
+                        <input
+                          type="text"
+                          placeholder="Value (e.g., 0 for Option 1)"
+                          value={question.logic.showIf.value}
+                          onChange={(e) => {
+                            const newLogic = { ...question.logic };
+                            newLogic.showIf.value = e.target.value;
+                            updateQuestion(qIndex, 'logic', newLogic);
+                          }}
+                          className="logic-value-input"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Answer Piping */}
+                {qIndex > 0 && (
+                  <div className="piping-builder">
+                    <h5 className="builder-section-title">🔗 Answer Piping</h5>
+                    <label className="toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={question.piping?.enabled}
+                        onChange={(e) => {
+                          const newPiping = { ...question.piping, enabled: e.target.checked };
+                          updateQuestion(qIndex, 'piping', newPiping);
+                        }}
+                      />
+                      <span className="toggle-text">Enable Dynamic Piping</span>
+                    </label>
+                    {question.piping?.enabled && (
+                      <div className="piping-fields">
+                        <span className="logic-label">Source Question:</span>
+                        <select
+                          className="piping-select"
+                          value={question.piping.sourceQuestionIndex}
+                          onChange={(e) => {
+                            const newPiping = { ...question.piping, sourceQuestionIndex: parseInt(e.target.value) };
+                            updateQuestion(qIndex, 'piping', newPiping);
+                          }}
+                        >
+                          {questions.slice(0, qIndex).map((_, i) => (
+                            <option key={i} value={i}>Question {i + 1}</option>
+                          ))}
+                        </select>
+                        <p className="piping-hint">Insert <code>[ANSWER]</code> in the question text to pipe raw data from the source.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {question.questionType !== 'open' && (
                   <div className="poll-options">

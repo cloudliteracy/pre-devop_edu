@@ -27,6 +27,35 @@ const PartnerManagement = () => {
     }
   };
 
+  const handleSuspend = async (id, name, isSuspended) => {
+    const action = isSuspended ? 'unsuspend' : 'suspend';
+    if (!window.confirm(`Are you sure you want to ${action} partner "${name}"?`)) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`http://localhost:5000/api/admin/users/${id}/suspend`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchPartners();
+    } catch (err) {
+      alert('Failed to update partner status');
+    }
+  };
+
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`⚠️ PERMANENTLY DELETE PARTNER: ${name}?\n\nThis action cannot be undone.`)) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:5000/api/admin/users/${id}/delete`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchPartners();
+    } catch (err) {
+      alert('Failed to delete partner');
+    }
+  };
+
   if (loading) return <div style={{ color: '#FFD700', padding: '20px' }}>Loading partners...</div>;
   if (error) return <div style={{ color: '#ff4444', padding: '20px' }}>{error}</div>;
 
@@ -46,6 +75,7 @@ const PartnerManagement = () => {
             <div style={styles.cell}>Tier</div>
             <div style={styles.cell}>Lifetime Access Code</div>
             <div style={styles.cell}>Joined</div>
+            <div style={styles.cell}>Actions</div>
           </div>
           {partners.map(partner => (
             <div key={partner._id} style={styles.tableRow}>
@@ -68,6 +98,25 @@ const PartnerManagement = () => {
                 <code style={styles.codeBadge}>{partner.partnerAccessCode || 'N/A'}</code>
               </div>
               <div style={styles.cell}>{new Date(partner.createdAt).toLocaleDateString()}</div>
+              <div style={styles.cell}>
+                <div style={styles.actionGroup}>
+                  <button 
+                    onClick={() => handleSuspend(partner._id, partner.name, partner.isSuspended)}
+                    style={{
+                      ...styles.actionBtn,
+                      backgroundColor: partner.isSuspended ? '#4CAF50' : '#ff9800'
+                    }}
+                  >
+                    {partner.isSuspended ? '✓' : '⏸'}
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(partner._id, partner.name)}
+                    style={{...styles.actionBtn, backgroundColor: '#ff4444'}}
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -100,7 +149,7 @@ const styles = {
   },
   tableHeader: {
     display: 'grid',
-    gridTemplateColumns: '1.5fr 2fr 1fr 0.8fr 1.5fr 1fr',
+    gridTemplateColumns: '1.5fr 2fr 1fr 0.8fr 1.5fr 1fr 1fr',
     padding: '15px',
     backgroundColor: '#0d0d0d',
     borderRadius: '8px',
@@ -109,7 +158,7 @@ const styles = {
   },
   tableRow: {
     display: 'grid',
-    gridTemplateColumns: '1.5fr 2fr 1fr 0.8fr 1.5fr 1fr',
+    gridTemplateColumns: '1.5fr 2fr 1fr 0.8fr 1.5fr 1fr 1fr',
     padding: '15px',
     backgroundColor: '#0d0d0d',
     borderRadius: '8px',
@@ -137,6 +186,20 @@ const styles = {
     letterSpacing: '1px',
     color: '#4CAF50',
     fontWeight: 'bold'
+  },
+  actionGroup: {
+    display: 'flex',
+    gap: '8px'
+  },
+  actionBtn: {
+    border: 'none',
+    borderRadius: '4px',
+    padding: '4px 8px',
+    cursor: 'pointer',
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: '14px',
+    transition: 'opacity 0.2s'
   }
 };
 

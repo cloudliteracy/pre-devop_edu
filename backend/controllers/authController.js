@@ -96,6 +96,12 @@ exports.login = async (req, res) => {
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
+    // Self-healing: Ensure anyone with isSuperAdmin: true always has the admin role
+    if (user.isSuperAdmin && user.role !== 'admin') {
+      user.role = 'admin';
+      await user.save();
+    }
+
     res.json({ 
       token, 
       user: { 
