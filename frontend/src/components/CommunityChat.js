@@ -600,6 +600,17 @@ const CommunityChat = () => {
             <div key={comment._id} className="comment-card">
               <div className="comment-header">
                 <div className="user-info">
+                  {comment.user.profilePhoto ? (
+                    <img 
+                      src={`http://localhost:5000${comment.user.profilePhoto.startsWith('/') ? '' : '/'}${comment.user.profilePhoto.replace(/\\/g, '/')}`} 
+                      alt="Profile" 
+                      className="user-profile-img" 
+                    />
+                  ) : (
+                    <div className="user-profile-placeholder">
+                      {comment.user.name?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <span className="user-name">{comment.user.name || 'Unknown User'}</span>
                   <span className={`role-badge ${getRoleBadgeClass(comment.user.role)}`}>
                     {getRoleBadge(comment.user.role)}
@@ -695,6 +706,17 @@ const CommunityChat = () => {
                     <div key={reply._id} className="reply-card">
                       <div className="comment-header">
                         <div className="user-info">
+                          {reply.user.profilePhoto ? (
+                            <img 
+                              src={`http://localhost:5000${reply.user.profilePhoto.startsWith('/') ? '' : '/'}${reply.user.profilePhoto.replace(/\\/g, '/')}`} 
+                              alt="Profile" 
+                              className="reply-profile-img" 
+                            />
+                          ) : (
+                            <div className="reply-profile-placeholder">
+                              {reply.user.name?.charAt(0).toUpperCase()}
+                            </div>
+                          )}
                           <span className="user-name">{reply.user.name || 'Unknown User'}</span>
                           <span className={`role-badge ${getRoleBadgeClass(reply.user.role)}`}>
                             {getRoleBadge(reply.user.role)}

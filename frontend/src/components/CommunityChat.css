@@ -209,6 +209,52 @@
   border: 1px solid #555;
 }
 
+.user-profile-img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #FFD700;
+  flex-shrink: 0;
+}
+
+.user-profile-placeholder {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: #FFD700;
+  color: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.reply-profile-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid #FFD700;
+  flex-shrink: 0;
+}
+
+.reply-profile-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #FFD700;
+  color: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
 .comment-time {
   color: #888;
   font-size: 13px;

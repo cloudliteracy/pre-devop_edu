@@ -1136,6 +1136,19 @@ const AdminDashboard = () => {
               {admins.map((admin) => (
                 <div key={admin._id} style={styles.adminCard}>
                   <div style={styles.adminCardHeader}>
+                    <div style={{ position: 'relative', width: '60px', height: '60px', flexShrink: 0 }}>
+                      {admin.profilePhoto ? (
+                        <img 
+                          src={`http://localhost:5000${(admin.profilePhoto || '').startsWith('/') ? '' : '/'}${(admin.profilePhoto || '').replace(/\\/g, '/')}`} 
+                          alt="Profile" 
+                          style={styles.adminProfileImg} 
+                        />
+                      ) : (
+                        <div style={styles.adminProfilePlaceholder}>
+                          {admin.name?.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
                     <div>
                       <div style={styles.adminName}>
                         {admin.name}
@@ -1542,6 +1555,27 @@ const styles = {
     alignItems: 'center',
     gap: '20px',
     padding: '20px 0'
+  },
+  adminProfileImg: {
+    width: '60px',
+    height: '60px',
+    borderRadius: '50%',
+    objectFit: 'cover',
+    border: '2px solid #FFD700',
+    flexShrink: 0
+  },
+  adminProfilePlaceholder: {
+    width: '60px',
+    height: '60px',
+    borderRadius: '50%',
+    backgroundColor: '#FFD700',
+    color: '#000',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    fontSize: '28px',
+    fontWeight: 'bold',
+    flexShrink: 0
   },
   profilePreviewContainer: {
     display: 'flex',
@@ -2016,7 +2050,10 @@ const styles = {
     padding: '20px'
   },
   adminCardHeader: {
-    marginBottom: '15px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '15px',
+    marginBottom: '20px',
     paddingBottom: '15px',
     borderBottom: '1px solid #333'
   },
