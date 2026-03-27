@@ -52,7 +52,8 @@ exports.getTestimonials = async (req, res) => {
     }
 
     const testimonials = await Testimonial.find(query)
-      .populate('userId', 'name')
+      .populate('userId', 'name profilePhoto')
+      .select('userId rating testimonialText profilePhoto isFeatured isApproved createdAt')
       .sort({ isFeatured: -1, createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -77,7 +78,8 @@ exports.getFeaturedTestimonials = async (req, res) => {
       isApproved: true, 
       isFeatured: true 
     })
-      .populate('userId', 'name')
+      .populate('userId', 'name profilePhoto')
+      .select('userId rating testimonialText profilePhoto isFeatured createdAt')
       .sort({ rating: -1, createdAt: -1 });
       // Unlimited featured, grouped by 5 per row in frontend
 
