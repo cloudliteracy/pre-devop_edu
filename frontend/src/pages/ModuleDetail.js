@@ -118,9 +118,12 @@ const ModuleDetail = () => {
         phoneNumber
       });
 
-      if ((paymentMethod === 'stripe' || paymentMethod === 'paypal') && data.url) {
-        // Redirect to Stripe or PayPal checkout
+      if (data.url) {
+        // Redirect to payment gateway (Stripe, PayPal) or test page (MTN MoMo, Orange Money)
         window.location.href = data.url;
+      } else if (data.testUrl) {
+        // Redirect to test completion page for mobile money
+        window.location.href = data.testUrl;
       } else {
         alert('Payment initiated: ' + JSON.stringify(data));
       }
