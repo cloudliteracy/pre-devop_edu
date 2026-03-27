@@ -24,6 +24,7 @@ import Vouchers from './pages/Vouchers';
 import Testimonials from './pages/Testimonials';
 import Profile from './pages/Profile';
 import PartnerPackages from './pages/PartnerPackages';
+import MoMoTest from './pages/MoMoTest';
 import socketService from './services/socket';
 
 function AppContent() {
@@ -78,6 +79,7 @@ function AppContent() {
           <Route path="/module/:id" element={<ModuleDetail />} />
           <Route path="/payment/success" element={<PaymentSuccess />} />
           <Route path="/payment/cancel" element={<PaymentCancel />} />
+          <Route path="/payment/momo-test" element={<MoMoTest />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/polls" element={<Polls />} />
           <Route path="/vouchers" element={<Vouchers />} />

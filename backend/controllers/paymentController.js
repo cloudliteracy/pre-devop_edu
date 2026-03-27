@@ -207,6 +207,63 @@ exports.verifyPayPalPayment = async (req, res) => {
   }
 };
 
+// Test endpoint to simulate MTN MoMo / Orange Money payment completion
+exports.completeMobileMoneyPayment = async (req, res) => {
+  try {
+    const { paymentId } = req.body;
+    const userId = req.user._id;
+
+    const payment = await Payment.findById(paymentId);
+
+    if (!payment) {
+      return res.status(404).json({ success: false, message: 'Payment not found' });
+    }
+
+    if (payment.userId.toString() !== userId.toString()) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    if (payment.status === 'completed') {
+      return res.status(400).json({ success: false, message: 'Payment already completed' });
+    }
+
+    // Simulate successful payment
+    payment.status = 'completed';
+    await payment.save();
+
+    if (payment.isPartnerPurchase) {
+      const crypto = require('crypto');
+      const accessCode = 'PTR-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+      
+      const targetUser = await User.findById(userId);
+      const newRole = (targetUser.role === 'admin' || targetUser.isSuperAdmin) ? 'admin' : 'partner';
+      
+      await User.findByIdAndUpdate(userId, {
+        $set: { 
+          role: newRole, 
+          partnerTier: payment.partnerTier,
+          partnerAccessCode: accessCode,
+          isCsrUser: true 
+        }
+      });
+    } else if (payment.moduleId) {
+      await User.findByIdAndUpdate(userId, {
+        $addToSet: { purchasedModules: payment.moduleId }
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Mobile money payment completed successfully',
+      moduleId: payment.moduleId,
+      isDonation: !payment.moduleId && !payment.isPartnerPurchase,
+      isPartnerPurchase: payment.isPartnerPurchase
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Payment completion failed', error: error.message });
+  }
+};
+
 async function handleStripePayment(description, amount, payment, isDonation) {
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
@@ -258,9 +315,27 @@ async function handlePayPalPayment(description, amount, payment, isDonation) {
 }
 
 async function handleMTNMoMo(description, amount, payment, phoneNumber) {
-  return { message: 'MTN MoMo integration pending', paymentId: payment._id };
+  // For testing: Create a simulated payment that can be manually completed
+  payment.status = 'pending';
+  payment.transactionId = 'MTN-' + Date.now();
+  
+  return { 
+    message: 'MTN MoMo payment initiated. Use the test completion endpoint to simulate payment.',
+    paymentId: payment._id,
+    transactionId: payment.transactionId,
+    testUrl: `${process.env.FRONTEND_URL}/payment/momo-test?paymentId=${payment._id}`
+  };
 }
 
 async function handleOrangeMoney(description, amount, payment, phoneNumber) {
-  return { message: 'Orange Money integration pending', paymentId: payment._id };
+  // For testing: Create a simulated payment that can be manually completed
+  payment.status = 'pending';
+  payment.transactionId = 'OM-' + Date.now();
+  
+  return { 
+    message: 'Orange Money payment initiated. Use the test completion endpoint to simulate payment.',
+    paymentId: payment._id,
+    transactionId: payment.transactionId,
+    testUrl: `${process.env.FRONTEND_URL}/payment/momo-test?paymentId=${payment._id}`
+  };
 }
