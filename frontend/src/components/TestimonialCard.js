@@ -33,9 +33,9 @@ const TestimonialCard = ({ testimonial, isOwn, onUpdate }) => {
       
       <div style={styles.header}>
         <div style={styles.userInfo}>
-          {testimonial.profilePhoto ? (
+          {(testimonial.profilePhoto || testimonial.userId.profilePhoto) ? (
             <img
-              src={`http://localhost:5000${testimonial.profilePhoto.startsWith('/') ? '' : '/'}${testimonial.profilePhoto.replace(/\\/g, '/')}`}
+              src={`http://localhost:5000${(testimonial.profilePhoto || testimonial.userId.profilePhoto).startsWith('/') ? '' : '/'}${(testimonial.profilePhoto || testimonial.userId.profilePhoto).replace(/\\/g, '/')}`}
               alt={testimonial.userId.name}
               style={styles.avatar}
             />

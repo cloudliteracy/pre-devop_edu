@@ -3,6 +3,8 @@ const User = require('../models/User');
 const Module = require('../models/Module');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const axios = require('axios');
+const mtnMomoService = require('../services/mtnMomoService');
+const orangeMoneyService = require('../services/orangeMoneyService');
 
 const PAYPAL_API = process.env.PAYPAL_MODE === 'live' 
   ? 'https://api-m.paypal.com' 
@@ -264,6 +266,175 @@ exports.completeMobileMoneyPayment = async (req, res) => {
   }
 };
 
+// Check MTN MoMo transaction status
+exports.checkMTNMoMoStatus = async (req, res) => {
+  try {
+    const { referenceId } = req.params;
+    const userId = req.user._id;
+
+    // Find payment by transaction ID
+    const payment = await Payment.findOne({ transactionId: referenceId });
+
+    if (!payment) {
+      return res.status(404).json({ success: false, message: 'Payment not found' });
+    }
+
+    if (payment.userId.toString() !== userId.toString()) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Query MTN MoMo for transaction status
+    const result = await mtnMomoService.getTransactionStatus(referenceId);
+
+    if (result.success && result.status === 'SUCCESSFUL') {
+      // Update payment status
+      payment.status = 'completed';
+      await payment.save();
+
+      // Grant access to module or partner status
+      if (payment.isPartnerPurchase) {
+        const crypto = require('crypto');
+        const accessCode = 'PTR-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+        
+        const targetUser = await User.findById(userId);
+        const newRole = (targetUser.role === 'admin' || targetUser.isSuperAdmin) ? 'admin' : 'partner';
+        
+        await User.findByIdAndUpdate(userId, {
+          $set: { 
+            role: newRole, 
+            partnerTier: payment.partnerTier,
+            partnerAccessCode: accessCode,
+            isCsrUser: true 
+          }
+        });
+      } else if (payment.moduleId) {
+        await User.findByIdAndUpdate(userId, {
+          $addToSet: { purchasedModules: payment.moduleId }
+        });
+      }
+
+      return res.json({
+        success: true,
+        status: 'SUCCESSFUL',
+        message: 'Payment completed successfully',
+        transactionDetails: result,
+        moduleId: payment.moduleId,
+        isDonation: !payment.moduleId && !payment.isPartnerPurchase,
+        isPartnerPurchase: payment.isPartnerPurchase
+      });
+    } else if (result.success && result.status === 'FAILED') {
+      payment.status = 'failed';
+      await payment.save();
+
+      return res.json({
+        success: false,
+        status: 'FAILED',
+        message: 'Payment failed',
+        reason: result.reason,
+        transactionDetails: result
+      });
+    } else {
+      // Still pending
+      return res.json({
+        success: true,
+        status: result.status || 'PENDING',
+        message: 'Payment is still pending',
+        transactionDetails: result
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to check transaction status', 
+      error: error.message 
+    });
+  }
+};
+
+// Check Orange Money transaction status
+exports.checkOrangeMoneyStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user._id;
+
+    // Find payment by transaction ID
+    const payment = await Payment.findOne({ transactionId: orderId });
+
+    if (!payment) {
+      return res.status(404).json({ success: false, message: 'Payment not found' });
+    }
+
+    if (payment.userId.toString() !== userId.toString()) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Query Orange Money for transaction status
+    const result = await orangeMoneyService.getTransactionStatus(orderId);
+
+    if (result.success && result.status === 'SUCCESSFUL') {
+      // Update payment status
+      payment.status = 'completed';
+      await payment.save();
+
+      // Grant access to module or partner status
+      if (payment.isPartnerPurchase) {
+        const crypto = require('crypto');
+        const accessCode = 'PTR-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+        
+        const targetUser = await User.findById(userId);
+        const newRole = (targetUser.role === 'admin' || targetUser.isSuperAdmin) ? 'admin' : 'partner';
+        
+        await User.findByIdAndUpdate(userId, {
+          $set: { 
+            role: newRole, 
+            partnerTier: payment.partnerTier,
+            partnerAccessCode: accessCode,
+            isCsrUser: true 
+          }
+        });
+      } else if (payment.moduleId) {
+        await User.findByIdAndUpdate(userId, {
+          $addToSet: { purchasedModules: payment.moduleId }
+        });
+      }
+
+      return res.json({
+        success: true,
+        status: 'SUCCESSFUL',
+        message: 'Payment completed successfully',
+        transactionDetails: result,
+        moduleId: payment.moduleId,
+        isDonation: !payment.moduleId && !payment.isPartnerPurchase,
+        isPartnerPurchase: payment.isPartnerPurchase
+      });
+    } else if (result.success && result.status === 'FAILED') {
+      payment.status = 'failed';
+      await payment.save();
+
+      return res.json({
+        success: false,
+        status: 'FAILED',
+        message: 'Payment failed',
+        transactionDetails: result
+      });
+    } else {
+      // Still pending
+      return res.json({
+        success: true,
+        status: result.status || 'PENDING',
+        message: 'Payment is still pending',
+        transactionDetails: result
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to check transaction status', 
+      error: error.message 
+    });
+  }
+};
+
 async function handleStripePayment(description, amount, payment, isDonation) {
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
@@ -315,27 +486,103 @@ async function handlePayPalPayment(description, amount, payment, isDonation) {
 }
 
 async function handleMTNMoMo(description, amount, payment, phoneNumber) {
-  // For testing: Create a simulated payment that can be manually completed
-  payment.status = 'pending';
-  payment.transactionId = 'MTN-' + Date.now();
-  
-  return { 
-    message: 'MTN MoMo payment initiated. Use the test completion endpoint to simulate payment.',
-    paymentId: payment._id,
-    transactionId: payment.transactionId,
-    testUrl: `${process.env.FRONTEND_URL}/payment/momo-test?paymentId=${payment._id}`
-  };
+  try {
+    // Initiate MTN MoMo request-to-pay
+    const result = await mtnMomoService.requestToPay({
+      amount: amount,
+      currency: process.env.MTN_MOMO_CURRENCY || 'EUR', // EUR for sandbox, XAF for Cameroon production
+      phoneNumber: phoneNumber,
+      payerMessage: description,
+      payeeNote: `CloudLiteracy - ${description}`,
+      externalId: payment._id.toString()
+    });
+
+    if (result.success) {
+      payment.status = 'pending';
+      payment.transactionId = result.referenceId;
+      
+      return {
+        success: true,
+        message: 'MTN MoMo payment initiated. Please approve the transaction on your phone.',
+        paymentId: payment._id,
+        referenceId: result.referenceId,
+        instructions: [
+          '1. Check your phone for MTN MoMo payment prompt',
+          '2. Enter your PIN to approve the payment',
+          '3. You will be redirected automatically upon completion'
+        ]
+      };
+    } else {
+      payment.status = 'failed';
+      throw new Error(result.message);
+    }
+  } catch (error) {
+    payment.status = 'failed';
+    console.error('MTN MoMo payment error:', error.message);
+    
+    // Fallback to test mode if service is not configured
+    if (error.message.includes('Missing required MTN MoMo credentials')) {
+      payment.status = 'pending';
+      payment.transactionId = 'MTN-TEST-' + Date.now();
+      
+      return { 
+        message: 'MTN MoMo payment initiated (TEST MODE). Use the test completion endpoint to simulate payment.',
+        paymentId: payment._id,
+        transactionId: payment.transactionId,
+        testUrl: `${process.env.FRONTEND_URL}/payment/momo-test?paymentId=${payment._id}`,
+        isTestMode: true
+      };
+    }
+    
+    throw error;
+  }
 }
 
 async function handleOrangeMoney(description, amount, payment, phoneNumber) {
-  // For testing: Create a simulated payment that can be manually completed
-  payment.status = 'pending';
-  payment.transactionId = 'OM-' + Date.now();
-  
-  return { 
-    message: 'Orange Money payment initiated. Use the test completion endpoint to simulate payment.',
-    paymentId: payment._id,
-    transactionId: payment.transactionId,
-    testUrl: `${process.env.FRONTEND_URL}/payment/momo-test?paymentId=${payment._id}`
-  };
+  try {
+    // Initiate Orange Money payment
+    const result = await orangeMoneyService.initiatePayment({
+      amount: amount,
+      currency: process.env.ORANGE_MONEY_CURRENCY || 'XAF',
+      phoneNumber: phoneNumber,
+      description: description,
+      reference: payment._id.toString()
+    });
+
+    if (result.success) {
+      payment.status = 'pending';
+      payment.transactionId = result.orderId;
+      
+      return {
+        success: true,
+        message: 'Orange Money payment initiated. You will be redirected to complete the payment.',
+        paymentId: payment._id,
+        orderId: result.orderId,
+        paymentUrl: result.paymentUrl,
+        url: result.paymentUrl // For automatic redirect
+      };
+    } else {
+      payment.status = 'failed';
+      throw new Error(result.message);
+    }
+  } catch (error) {
+    payment.status = 'failed';
+    console.error('Orange Money payment error:', error.message);
+    
+    // Fallback to test mode if service is not configured
+    if (error.message.includes('Missing required Orange Money credentials')) {
+      payment.status = 'pending';
+      payment.transactionId = 'OM-TEST-' + Date.now();
+      
+      return { 
+        message: 'Orange Money payment initiated (TEST MODE). Use the test completion endpoint to simulate payment.',
+        paymentId: payment._id,
+        transactionId: payment.transactionId,
+        testUrl: `${process.env.FRONTEND_URL}/payment/momo-test?paymentId=${payment._id}`,
+        isTestMode: true
+      };
+    }
+    
+    throw error;
+  }
 }

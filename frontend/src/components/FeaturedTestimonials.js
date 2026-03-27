@@ -46,9 +46,9 @@ const FeaturedTestimonials = ({ refreshKey = 0 }) => {
             {row.map(testimonial => (
               <div key={testimonial._id} style={styles.card}>
                 <div style={styles.header}>
-                  {testimonial.profilePhoto ? (
+                  {(testimonial.profilePhoto || testimonial.userId.profilePhoto) ? (
                     <img
-                      src={`http://localhost:5000${testimonial.profilePhoto.startsWith('/') ? '' : '/'}${testimonial.profilePhoto.replace(/\\/g, '/')}`}
+                      src={`http://localhost:5000${(testimonial.profilePhoto || testimonial.userId.profilePhoto).startsWith('/') ? '' : '/'}${(testimonial.profilePhoto || testimonial.userId.profilePhoto).replace(/\\/g, '/')}`}
                       alt={testimonial.userId.name}
                       style={styles.avatar}
                     />
