@@ -112,6 +112,11 @@ exports.sendMessage = async (req, res) => {
       return res.status(400).json({ message: 'Chat session is closed' });
     }
 
+    // Validate sender
+    if (senderType === 'admin' && !req.user) {
+      return res.status(401).json({ message: 'Admin authentication required' });
+    }
+
     const message = {
       senderId: req.user ? req.user._id : null,
       senderType,
@@ -133,6 +138,7 @@ exports.sendMessage = async (req, res) => {
 
     res.json(message);
   } catch (error) {
+    console.error('Send message error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -188,6 +194,7 @@ exports.getChatHistory = async (req, res) => {
     const sessions = await HelpDeskChat.find({ status: 'closed' })
       .populate('userId', 'name email')
       .populate('adminId', 'name email')
+      .populate('closedBy', 'name email')
       .sort({ closedAt: -1 })
       .limit(parseInt(limit))
       .skip(parseInt(skip));
@@ -195,6 +202,29 @@ exports.getChatHistory = async (req, res) => {
     const total = await HelpDeskChat.countDocuments({ status: 'closed' });
 
     res.json({ sessions, total });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Delete chat session (admin only)
+exports.deleteSession = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    
+    const chat = await HelpDeskChat.findOne({ sessionId });
+    
+    if (!chat) {
+      return res.status(404).json({ message: 'Chat session not found' });
+    }
+
+    if (chat.status !== 'closed') {
+      return res.status(400).json({ message: 'Can only delete closed sessions' });
+    }
+
+    await HelpDeskChat.deleteOne({ sessionId });
+
+    res.json({ message: 'Chat session deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
