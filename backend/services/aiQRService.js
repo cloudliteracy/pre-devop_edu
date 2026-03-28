@@ -12,14 +12,18 @@ const AIKnowledgeBaseState = require('../models/AIKnowledgeBaseState');
 class AIQRService {
   constructor() {
     this.apiKey = process.env.OPENAI_API_KEY;
-    this.model = process.env.OPENAI_MODEL || 'gpt-4-turbo-preview';
+    this.model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
     this.apiUrl = 'https://api.openai.com/v1/chat/completions';
-    this.maxTokens = 2000;
+    this.maxTokens = 1500;
     this.temperature = 0.7;
     
     // Knowledge base cache
     this.knowledgeBaseCache = null;
     this.cacheTimestamp = null;
+    
+    // Rate limiting
+    this.lastRequestTime = 0;
+    this.minRequestInterval = 3000; // 3 seconds between requests
   }
 
   /**
@@ -436,8 +440,22 @@ For detailed information, please upload platform documentation to the knowledge 
     try {
       this.validateConfiguration();
 
+      // Rate limiting check
+      const now = Date.now();
+      const timeSinceLastRequest = now - this.lastRequestTime;
+      if (timeSinceLastRequest < this.minRequestInterval) {
+        const waitTime = Math.ceil((this.minRequestInterval - timeSinceLastRequest) / 1000);
+        throw new Error(`Please wait ${waitTime} seconds before sending another message.`);
+      }
+
       // Load knowledge base
       const knowledgeBase = await this.loadKnowledgeBase();
+
+      // Truncate knowledge base if too large (to avoid token limits)
+      const maxKnowledgeLength = 50000; // ~12k tokens
+      const truncatedKnowledge = knowledgeBase.length > maxKnowledgeLength 
+        ? knowledgeBase.substring(0, maxKnowledgeLength) + '\n\n[Knowledge base truncated due to size...]'
+        : knowledgeBase;
 
       // Build system prompt
       const systemPrompt = `You are an AI assistant for the CloudLiteracy educational platform. Your role is to answer questions ONLY about the platform's infrastructure, operations, features, and technical implementation.
@@ -449,7 +467,7 @@ You have access to:
 4. UPLOADED PDFs - Additional documentation provided by admins
 
 KNOWLEDGE BASE:
-${knowledgeBase}
+${truncatedKnowledge}
 
 STRICT RULES:
 1. ONLY answer questions related to CloudLiteracy platform operations, features, technical details, infrastructure, code implementation, or architecture
@@ -483,15 +501,21 @@ When answering:
 - Explain technical concepts clearly
 - Provide step-by-step guidance when needed`;
 
+      // Limit conversation history to last 5 messages to save tokens
+      const recentHistory = conversationHistory.slice(-5);
+
       // Build messages array
       const messages = [
         { role: 'system', content: systemPrompt },
-        ...conversationHistory.map(msg => ({
+        ...recentHistory.map(msg => ({
           role: msg.role,
           content: msg.content
         })),
         { role: 'user', content: userMessage }
       ];
+
+      // Update last request time
+      this.lastRequestTime = now;
 
       // Call OpenAI API
       const response = await axios.post(
@@ -506,7 +530,8 @@ When answering:
           headers: {
             'Authorization': `Bearer ${this.apiKey}`,
             'Content-Type': 'application/json'
-          }
+          },
+          timeout: 30000 // 30 second timeout
         }
       );
 
@@ -516,7 +541,8 @@ When answering:
       this.log('AI response generated', 'SUCCESS', {
         userMessage: userMessage.substring(0, 50) + '...',
         responseLength: aiMessage.length,
-        isOutOfScope
+        isOutOfScope,
+        tokensUsed: response.data.usage.total_tokens
       });
 
       return {
@@ -535,9 +561,11 @@ When answering:
       if (error.response?.status === 401) {
         throw new Error('Invalid OpenAI API key. Please check your configuration.');
       } else if (error.response?.status === 429) {
-        throw new Error('OpenAI API rate limit exceeded. Please try again later.');
+        throw new Error('OpenAI API rate limit exceeded. Please wait a few minutes and try again. Consider upgrading your OpenAI plan for higher limits.');
       } else if (error.response?.status === 500) {
         throw new Error('OpenAI service error. Please try again later.');
+      } else if (error.message.includes('wait')) {
+        throw error; // Re-throw rate limiting message
       }
 
       throw new Error(`AI service error: ${error.message}`);
