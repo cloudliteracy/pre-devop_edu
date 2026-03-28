@@ -19,9 +19,21 @@ const Navbar = () => {
       <div style={styles.container}>
         <div style={styles.logoContainer}>
           <Link to="/" style={styles.logo}>
-            <span style={styles.logoIcon}>☁️</span>
-            CloudLiteracy
+            <div style={styles.cloudLiteracyLogo}>
+              <div style={styles.cloudIconWrapper}>
+                <span style={styles.mainCloudIcon}>☁️</span>
+                <span style={styles.sparkle1}>✨</span>
+                <span style={styles.sparkle2}>✨</span>
+              </div>
+              <div style={styles.logoTextWrapper}>
+                <span style={styles.cloudText}>Cloud</span>
+                <span style={styles.literacyText}>Literacy</span>
+              </div>
+              <div style={styles.tagline}>Elevate Your DevOps Journey</div>
+            </div>
           </Link>
+        </div>
+        <div style={styles.menu}>
           <Link 
             to="/" 
             style={getLinkStyle('home')}
@@ -30,8 +42,6 @@ const Navbar = () => {
           >
             Home
           </Link>
-        </div>
-        <div style={styles.menu}>
           <Link 
             to={location.pathname === '/modules' ? '/' : '/modules'} 
             style={getLinkStyle('modules')}
@@ -162,17 +172,79 @@ const styles = {
     fontWeight: 'bold',
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
+    gap: '15px',
     marginBottom: '5px'
   },
   logoContainer: {
     display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '5px'
+    alignItems: 'center'
   },
   logoIcon: {
     fontSize: '28px'
+  },
+  cloudLiteracyLogo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    position: 'relative'
+  },
+  cloudIconWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  mainCloudIcon: {
+    fontSize: '42px',
+    filter: 'drop-shadow(0 0 10px rgba(255, 215, 0, 0.6))',
+    animation: 'pulse 2s ease-in-out infinite'
+  },
+  sparkle1: {
+    position: 'absolute',
+    top: '-5px',
+    right: '-5px',
+    fontSize: '14px',
+    animation: 'sparkle 1.5s ease-in-out infinite'
+  },
+  sparkle2: {
+    position: 'absolute',
+    bottom: '-5px',
+    left: '-5px',
+    fontSize: '12px',
+    animation: 'sparkle 1.5s ease-in-out infinite 0.75s'
+  },
+  logoTextWrapper: {
+    display: 'flex',
+    flexDirection: 'column',
+    lineHeight: '1.2'
+  },
+  cloudText: {
+    fontSize: '28px',
+    fontWeight: 'bold',
+    background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    letterSpacing: '1px',
+    fontFamily: 'Arial Black, sans-serif',
+    textShadow: '0 2px 10px rgba(255, 215, 0, 0.3)'
+  },
+  literacyText: {
+    fontSize: '28px',
+    fontWeight: 'bold',
+    color: '#fff',
+    letterSpacing: '1px',
+    fontFamily: 'Arial Black, sans-serif',
+    textShadow: '0 2px 8px rgba(255, 255, 255, 0.3)'
+  },
+  tagline: {
+    position: 'absolute',
+    bottom: '-18px',
+    left: '54px',
+    fontSize: '10px',
+    color: '#FFD700',
+    fontStyle: 'italic',
+    letterSpacing: '0.5px',
+    opacity: 0.9
   },
   menu: {
     display: 'flex',
@@ -233,5 +305,45 @@ const styles = {
     marginRight: '8px'
   }
 };
+
+// Add floating animation for clouds
+const styleSheet = document.styleSheets[0];
+const keyframes = `
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}`;
+
+if (styleSheet) {
+  try {
+    styleSheet.insertRule(keyframes, styleSheet.cssRules.length);
+  } catch (e) {
+    // Animation already exists
+  }
+}
 
 export default Navbar;
