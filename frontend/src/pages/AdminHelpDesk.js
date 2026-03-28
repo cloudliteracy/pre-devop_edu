@@ -26,6 +26,13 @@ const AdminHelpDesk = () => {
     };
   }, []);
 
+  useEffect(() => {
+    // Re-setup listeners when selectedSession changes
+    if (selectedSession) {
+      setupSocketListeners();
+    }
+  }, [selectedSession]);
+
   const initializeEncryption = async () => {
     await encryption.generateKeyPair();
   };
@@ -55,23 +62,41 @@ const AdminHelpDesk = () => {
   };
 
   const setupSocketListeners = () => {
+    socketService.socket?.off('helpdesk:new-request');
+    socketService.socket?.off('helpdesk:new-message');
+    socketService.socket?.off('helpdesk:key-exchange');
+
     socketService.socket?.on('helpdesk:new-request', (data) => {
       fetchActiveSessions();
     });
 
     socketService.socket?.on('helpdesk:new-message', async (data) => {
-      if (selectedSession && data.sessionId === selectedSession.sessionId) {
-        const decryptedContent = await encryption.decrypt(data.message.encryptedContent);
-        setMessages(prev => [...prev, { ...data.message, content: decryptedContent }]);
-      }
+      setSelectedSession(current => {
+        if (current && data.sessionId === current.sessionId) {
+          encryption.decrypt(data.message.encryptedContent)
+            .then(decryptedContent => {
+              setMessages(prev => [...prev, { ...data.message, content: decryptedContent }]);
+            })
+            .catch(err => console.error('Failed to decrypt message:', err));
+        }
+        return current;
+      });
     });
 
     socketService.socket?.on('helpdesk:key-exchange', async (data) => {
-      if (selectedSession && data.sessionId === selectedSession.sessionId) {
-        console.log('Received public key from guest');
-        await encryption.importPublicKey(data.publicKey);
-        setRecipientPublicKey(data.publicKey);
-      }
+      console.log('Key exchange received for session:', data.sessionId);
+      setSelectedSession(current => {
+        if (current && data.sessionId === current.sessionId) {
+          console.log('Importing guest public key...');
+          encryption.importPublicKey(data.publicKey)
+            .then(() => {
+              setRecipientPublicKey(data.publicKey);
+              console.log('Guest public key imported successfully!');
+            })
+            .catch(err => console.error('Failed to import public key:', err));
+        }
+        return current;
+      });
     });
   };
 
