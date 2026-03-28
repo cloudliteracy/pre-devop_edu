@@ -91,11 +91,13 @@ const HelpDeskChat = ({ user, onClose, onUnreadChange }) => {
       setStatus('active');
       setAdminName(data.adminName);
       
-      // Import admin's public key
-      if (data.publicKey) {
-        await encryption.importPublicKey(data.publicKey);
-        setRecipientPublicKey(data.publicKey);
-      }
+      // Exchange public key with admin
+      const myPublicKey = await encryption.exportPublicKey();
+      socketService.socket?.emit('helpdesk:exchange-key', {
+        sessionId: sid,
+        publicKey: myPublicKey
+      });
+      console.log('Sent public key to admin');
     });
 
     socketService.socket?.on('helpdesk:new-message', async (data) => {

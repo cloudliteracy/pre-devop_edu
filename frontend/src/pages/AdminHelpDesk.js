@@ -5,15 +5,18 @@ import E2EEncryption from '../utils/e2eEncryption';
 
 const AdminHelpDesk = () => {
   const [activeSessions, setActiveSessions] = useState([]);
+  const [chatHistory, setChatHistory] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [encryption] = useState(new E2EEncryption());
   const [recipientPublicKey, setRecipientPublicKey] = useState(null);
+  const [activeTab, setActiveTab] = useState('active'); // 'active' or 'history'
 
   useEffect(() => {
     initializeEncryption();
     fetchActiveSessions();
+    fetchChatHistory();
     setupSocketListeners();
     
     return () => {
@@ -39,6 +42,18 @@ const AdminHelpDesk = () => {
     }
   };
 
+  const fetchChatHistory = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const { data } = await axios.get('http://localhost:5000/api/helpdesk/sessions/history', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setChatHistory(data.sessions || []);
+    } catch (error) {
+      console.error('Failed to fetch chat history:', error);
+    }
+  };
+
   const setupSocketListeners = () => {
     socketService.socket?.on('helpdesk:new-request', (data) => {
       fetchActiveSessions();
@@ -50,11 +65,38 @@ const AdminHelpDesk = () => {
         setMessages(prev => [...prev, { ...data.message, content: decryptedContent }]);
       }
     });
+
+    socketService.socket?.on('helpdesk:key-exchange', async (data) => {
+      if (selectedSession && data.sessionId === selectedSession.sessionId) {
+        console.log('Received public key from guest');
+        await encryption.importPublicKey(data.publicKey);
+        setRecipientPublicKey(data.publicKey);
+      }
+    });
   };
 
   const joinSession = async (session) => {
     try {
       const token = localStorage.getItem('token');
+      
+      // If viewing history, just load messages without joining
+      if (session.status === 'closed') {
+        setSelectedSession(session);
+        // Decrypt messages for display
+        const decryptedMessages = await Promise.all(
+          (session.messages || []).map(async (msg) => {
+            try {
+              const decrypted = await encryption.decrypt(msg.encryptedContent);
+              return { ...msg, content: decrypted };
+            } catch (err) {
+              return { ...msg, content: '[Encrypted message]' };
+            }
+          })
+        );
+        setMessages(decryptedMessages);
+        return;
+      }
+
       const { data } = await axios.post(
         `http://localhost:5000/api/helpdesk/session/${session.sessionId}/join`,
         {},
@@ -62,7 +104,19 @@ const AdminHelpDesk = () => {
       );
 
       setSelectedSession(data);
-      setMessages(data.messages || []);
+      
+      // Decrypt existing messages
+      const decryptedMessages = await Promise.all(
+        (data.messages || []).map(async (msg) => {
+          try {
+            const decrypted = await encryption.decrypt(msg.encryptedContent);
+            return { ...msg, content: decrypted };
+          } catch (err) {
+            return { ...msg, content: '[Encrypted message]' };
+          }
+        })
+      );
+      setMessages(decryptedMessages);
       
       socketService.socket?.emit('join-helpdesk', session.sessionId);
       
@@ -71,6 +125,13 @@ const AdminHelpDesk = () => {
         sessionId: session.sessionId,
         publicKey: myPublicKey
       });
+      
+      // Set a temporary flag to allow sending after key exchange
+      setTimeout(() => {
+        if (!recipientPublicKey) {
+          console.warn('Recipient public key not received yet');
+        }
+      }, 2000);
 
       fetchActiveSessions();
     } catch (error) {
@@ -80,6 +141,11 @@ const AdminHelpDesk = () => {
 
   const sendMessage = async () => {
     if (!inputMessage.trim() || !selectedSession) return;
+
+    if (!recipientPublicKey) {
+      alert('Waiting for encryption keys to be exchanged. Please wait a moment and try again.');
+      return;
+    }
 
     try {
       const encryptedContent = await encryption.encrypt(inputMessage.trim());
@@ -99,7 +165,8 @@ const AdminHelpDesk = () => {
 
       setInputMessage('');
     } catch (error) {
-      alert('Failed to send message');
+      console.error('Send message error:', error);
+      alert(error.response?.data?.message || 'Failed to send message: ' + error.message);
     }
   };
 
@@ -117,8 +184,31 @@ const AdminHelpDesk = () => {
       setSelectedSession(null);
       setMessages([]);
       fetchActiveSessions();
+      fetchChatHistory();
     } catch (error) {
       alert('Failed to close session');
+    }
+  };
+
+  const deleteSession = async (sessionId) => {
+    if (!window.confirm('Are you sure you want to delete this chat history? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(
+        `http://localhost:5000/api/helpdesk/session/${sessionId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (selectedSession?.sessionId === sessionId) {
+        setSelectedSession(null);
+        setMessages([]);
+      }
+      fetchChatHistory();
+    } catch (error) {
+      alert('Failed to delete session');
     }
   };
 
@@ -126,30 +216,80 @@ const AdminHelpDesk = () => {
     <div style={styles.container}>
       <h2 style={styles.title}>Help Desk Management</h2>
       
+      <div style={styles.tabs}>
+        <button
+          style={{
+            ...styles.tab,
+            ...(activeTab === 'active' ? styles.tabActive : {})
+          }}
+          onClick={() => setActiveTab('active')}
+        >
+          Active Sessions ({activeSessions.length})
+        </button>
+        <button
+          style={{
+            ...styles.tab,
+            ...(activeTab === 'history' ? styles.tabActive : {})
+          }}
+          onClick={() => setActiveTab('history')}
+        >
+          Chat History ({chatHistory.length})
+        </button>
+      </div>
+      
       <div style={styles.layout}>
         <div style={styles.sidebar}>
-          <h3 style={styles.sidebarTitle}>Active Sessions ({activeSessions.length})</h3>
-          {activeSessions.length === 0 ? (
-            <p style={styles.noSessions}>No active sessions</p>
+          <h3 style={styles.sidebarTitle}>
+            {activeTab === 'active' ? 'Active Sessions' : 'Chat History'}
+          </h3>
+          {(activeTab === 'active' ? activeSessions : chatHistory).length === 0 ? (
+            <p style={styles.noSessions}>
+              {activeTab === 'active' ? 'No active sessions' : 'No chat history'}
+            </p>
           ) : (
-            activeSessions.map(session => (
+            (activeTab === 'active' ? activeSessions : chatHistory).map(session => (
               <div
                 key={session._id}
                 style={{
                   ...styles.sessionCard,
                   ...(selectedSession?._id === session._id ? styles.sessionCardActive : {})
                 }}
-                onClick={() => session.status === 'waiting' && joinSession(session)}
               >
-                <div style={styles.sessionUser}>
-                  {session.userType === 'guest' ? session.guestName : session.userId?.name}
+                <div
+                  onClick={() => activeTab === 'active' 
+                    ? (session.status === 'waiting' && joinSession(session))
+                    : joinSession(session)
+                  }
+                  style={{ cursor: 'pointer', flex: 1 }}
+                >
+                  <div style={styles.sessionUser}>
+                    {session.userType === 'guest' ? session.guestName : session.userId?.name}
+                  </div>
+                  <div style={styles.sessionStatus}>
+                    {activeTab === 'active' 
+                      ? (session.status === 'waiting' ? '⏳ Waiting' : `✅ ${session.adminId?.name}`)
+                      : `✅ Closed by ${session.closedBy?.name || 'Admin'}`
+                    }
+                  </div>
+                  <div style={styles.sessionTime}>
+                    {activeTab === 'active'
+                      ? new Date(session.startedAt).toLocaleString()
+                      : new Date(session.closedAt).toLocaleString()
+                    }
+                  </div>
                 </div>
-                <div style={styles.sessionStatus}>
-                  {session.status === 'waiting' ? '⏳ Waiting' : `✅ ${session.adminId?.name}`}
-                </div>
-                <div style={styles.sessionTime}>
-                  {new Date(session.startedAt).toLocaleTimeString()}
-                </div>
+                {activeTab === 'history' && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteSession(session.sessionId);
+                    }}
+                    style={styles.deleteButton}
+                    title="Delete chat history"
+                  >
+                    🗑️
+                  </button>
+                )}
               </div>
             ))
           )}
@@ -201,8 +341,16 @@ const AdminHelpDesk = () => {
                   onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                   placeholder="Type your message..."
                   style={styles.input}
+                  disabled={selectedSession?.status === 'closed'}
                 />
-                <button onClick={sendMessage} style={styles.sendButton}>
+                <button 
+                  onClick={sendMessage} 
+                  style={{
+                    ...styles.sendButton,
+                    ...(selectedSession?.status === 'closed' ? { opacity: 0.5, cursor: 'not-allowed' } : {})
+                  }}
+                  disabled={selectedSession?.status === 'closed'}
+                >
                   Send
                 </button>
               </div>
@@ -227,6 +375,27 @@ const styles = {
     color: '#FFD700',
     fontSize: '28px',
     marginBottom: '20px'
+  },
+  tabs: {
+    display: 'flex',
+    gap: '10px',
+    marginBottom: '20px'
+  },
+  tab: {
+    padding: '10px 20px',
+    backgroundColor: '#1a1a1a',
+    color: '#999',
+    border: '1px solid #333',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    transition: 'all 0.3s'
+  },
+  tabActive: {
+    backgroundColor: '#FFD700',
+    color: '#000',
+    borderColor: '#FFD700'
   },
   layout: {
     display: 'grid',
@@ -259,7 +428,10 @@ const styles = {
     borderRadius: '8px',
     marginBottom: '10px',
     cursor: 'pointer',
-    transition: 'all 0.3s'
+    transition: 'all 0.3s',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px'
   },
   sessionCardActive: {
     borderColor: '#FFD700',
@@ -383,6 +555,16 @@ const styles = {
   emptyText: {
     color: '#999',
     fontSize: '16px'
+  },
+  deleteButton: {
+    padding: '6px 10px',
+    backgroundColor: '#ff4444',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '16px',
+    transition: 'all 0.3s'
   }
 };
 

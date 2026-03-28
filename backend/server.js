@@ -22,6 +22,7 @@ const csrRoutes = require('./routes/csr');
 const voucherRoutes = require('./routes/vouchers');
 const helpdeskRoutes = require('./routes/helpdesk');
 const testimonialRoutes = require('./routes/testimonials');
+const aiQRRoutes = require('./routes/aiQR');
 const { startVoucherExpirationCron } = require('./cronJobs');
 
 const app = express();
@@ -56,6 +57,7 @@ app.use('/api/csr', csrRoutes);
 app.use('/api/vouchers', voucherRoutes);
 app.use('/api/helpdesk', helpdeskRoutes);
 app.use('/api/testimonials', testimonialRoutes);
+app.use('/api/ai-qr', aiQRRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'CloudLiteracy API Server' });
@@ -129,6 +131,26 @@ io.on('connection', (socket) => {
     io.emit('online-users-update', Array.from(onlineUsers.values()));
     console.log('User disconnected:', socket.id);
   });
+
+  // Help Desk Socket Events
+  socket.on('join-helpdesk', (sessionId) => {
+    socket.join(sessionId);
+    console.log(`Socket ${socket.id} joined helpdesk session: ${sessionId}`);
+  });
+
+  socket.on('leave-helpdesk', (sessionId) => {
+    socket.leave(sessionId);
+    console.log(`Socket ${socket.id} left helpdesk session: ${sessionId}`);
+  });
+
+  socket.on('helpdesk:exchange-key', (data) => {
+    // Broadcast public key to other participants in the session
+    socket.to(data.sessionId).emit('helpdesk:key-exchange', {
+      sessionId: data.sessionId,
+      publicKey: data.publicKey
+    });
+    console.log(`Key exchange in session: ${data.sessionId}`);
+  });
 });
 
 // Export io for use in controllers
@@ -137,6 +159,24 @@ module.exports.io = io;
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  
+  // Create upload directories if they don't exist
+  const fs = require('fs');
+  const uploadDirs = [
+    'uploads/pdfs',
+    'uploads/videos',
+    'uploads/vouchers',
+    'uploads/survey-responses',
+    'uploads/testimonials',
+    'uploads/ai-knowledge'
+  ];
+  
+  uploadDirs.forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+      console.log(`Created directory: ${dir}`);
+    }
+  });
   
   // Start cron jobs
   startVoucherExpirationCron();

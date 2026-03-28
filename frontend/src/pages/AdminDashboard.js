@@ -710,6 +710,18 @@ const AdminDashboard = () => {
               💬 Testimonials
             </button>
           )}
+          {currentUser?.isSuperAdmin && (
+            <button
+              onClick={() => navigate('/admin/ai-qr')}
+              style={{
+                ...styles.tab,
+                backgroundColor: '#1a1a1a',
+                color: '#FFD700'
+              }}
+            >
+              🤖 AI QR
+            </button>
+          )}
         </div>
 
         {/* Overview Tab */}
