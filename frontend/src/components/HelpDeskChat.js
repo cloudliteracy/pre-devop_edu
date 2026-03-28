@@ -18,10 +18,18 @@ const HelpDeskChat = ({ user, onClose, onUnreadChange }) => {
 
   useEffect(() => {
     initializeEncryption();
+    
+    // Setup socket listeners immediately
+    setupSocketListeners();
+    
     return () => {
       if (sessionId) {
         socketService.socket?.emit('leave-helpdesk', sessionId);
       }
+      // Cleanup listeners
+      socketService.socket?.off('helpdesk:admin-joined');
+      socketService.socket?.off('helpdesk:new-message');
+      socketService.socket?.off('helpdesk:session-closed');
     };
   }, []);
 
@@ -67,17 +75,8 @@ const HelpDeskChat = ({ user, onClose, onUnreadChange }) => {
       setShowGuestForm(false);
 
       // Join socket room
+      console.log('Joining socket room:', data.sessionId);
       socketService.socket?.emit('join-helpdesk', data.sessionId);
-
-      // Setup socket listeners
-      setupSocketListeners(data.sessionId);
-
-      // Exchange public keys
-      const myPublicKey = await encryption.exportPublicKey();
-      socketService.socket?.emit('helpdesk:exchange-key', {
-        sessionId: data.sessionId,
-        publicKey: myPublicKey
-      });
 
     } catch (error) {
       console.error('Failed to start session:', error);
@@ -86,61 +85,52 @@ const HelpDeskChat = ({ user, onClose, onUnreadChange }) => {
     }
   };
 
-  const setupSocketListeners = (sid) => {
-    socketService.socket?.on('helpdesk:admin-joined', async (data) => {
+  const setupSocketListeners = () => {
+    // Remove old listeners
+    socketService.socket?.off('helpdesk:admin-joined');
+    socketService.socket?.off('helpdesk:new-message');
+    socketService.socket?.off('helpdesk:session-closed');
+
+    socketService.socket?.on('helpdesk:admin-joined', (data) => {
+      console.log('Admin joined event received:', data);
       setStatus('active');
       setAdminName(data.adminName);
-      
-      // Exchange public key with admin
-      const myPublicKey = await encryption.exportPublicKey();
-      socketService.socket?.emit('helpdesk:exchange-key', {
-        sessionId: sid,
-        publicKey: myPublicKey
-      });
-      console.log('Sent public key to admin');
     });
 
-    socketService.socket?.on('helpdesk:new-message', async (data) => {
-      if (data.sessionId === sid) {
-        // Decrypt message
-        const decryptedContent = await encryption.decrypt(data.message.encryptedContent);
-        
-        setMessages(prev => [...prev, {
-          ...data.message,
-          content: decryptedContent
-        }]);
-      }
+    socketService.socket?.on('helpdesk:new-message', (data) => {
+      console.log('New message received:', data.sessionId);
+      setSessionId(currentSessionId => {
+        if (currentSessionId && data.sessionId === currentSessionId) {
+          try {
+            const decryptedContent = atob(data.message.encryptedContent);
+            setMessages(prev => [...prev, {
+              ...data.message,
+              content: decryptedContent
+            }]);
+          } catch (err) {
+            console.error('Failed to decrypt message:', err);
+          }
+        }
+        return currentSessionId;
+      });
     });
 
     socketService.socket?.on('helpdesk:session-closed', (data) => {
-      if (data.sessionId === sid) {
-        setStatus('closed');
-      }
-    });
-
-    socketService.socket?.on('helpdesk:key-exchange', async (data) => {
-      console.log('Key exchange received from admin for session:', data.sessionId, sid);
-      if (data.sessionId === sid && data.publicKey) {
-        console.log('Importing admin public key...');
-        await encryption.importPublicKey(data.publicKey);
-        setRecipientPublicKey(data.publicKey);
-        console.log('Admin public key imported successfully!');
-      }
-    });
-
-    socketService.socket?.on('helpdesk:typing', (data) => {
-      if (data.sessionId === sid) {
-        // Handle typing indicator
-      }
+      setSessionId(currentSessionId => {
+        if (currentSessionId && data.sessionId === currentSessionId) {
+          setStatus('closed');
+        }
+        return currentSessionId;
+      });
     });
   };
 
   const sendMessage = async () => {
-    if (!inputMessage.trim() || !recipientPublicKey) return;
+    if (!inputMessage.trim()) return;
 
     try {
-      // Encrypt message
-      const encryptedContent = await encryption.encrypt(inputMessage.trim());
+      // Use simple base64 encoding
+      const encryptedContent = btoa(inputMessage.trim());
 
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};

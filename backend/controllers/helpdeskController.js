@@ -218,10 +218,6 @@ exports.deleteSession = async (req, res) => {
       return res.status(404).json({ message: 'Chat session not found' });
     }
 
-    if (chat.status !== 'closed') {
-      return res.status(400).json({ message: 'Can only delete closed sessions' });
-    }
-
     await HelpDeskChat.deleteOne({ sessionId });
 
     res.json({ message: 'Chat session deleted successfully' });

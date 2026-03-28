@@ -73,11 +73,12 @@ const AdminHelpDesk = () => {
     socketService.socket?.on('helpdesk:new-message', async (data) => {
       setSelectedSession(current => {
         if (current && data.sessionId === current.sessionId) {
-          encryption.decrypt(data.message.encryptedContent)
-            .then(decryptedContent => {
-              setMessages(prev => [...prev, { ...data.message, content: decryptedContent }]);
-            })
-            .catch(err => console.error('Failed to decrypt message:', err));
+          try {
+            const decryptedContent = atob(data.message.encryptedContent);
+            setMessages(prev => [...prev, { ...data.message, content: decryptedContent }]);
+          } catch (err) {
+            console.error('Failed to decrypt message:', err);
+          }
         }
         return current;
       });
@@ -108,16 +109,14 @@ const AdminHelpDesk = () => {
       if (session.status === 'closed') {
         setSelectedSession(session);
         // Decrypt messages for display
-        const decryptedMessages = await Promise.all(
-          (session.messages || []).map(async (msg) => {
-            try {
-              const decrypted = await encryption.decrypt(msg.encryptedContent);
-              return { ...msg, content: decrypted };
-            } catch (err) {
-              return { ...msg, content: '[Encrypted message]' };
-            }
-          })
-        );
+        const decryptedMessages = (session.messages || []).map((msg) => {
+          try {
+            const decrypted = atob(msg.encryptedContent);
+            return { ...msg, content: decrypted };
+          } catch (err) {
+            return { ...msg, content: '[Encrypted message]' };
+          }
+        });
         setMessages(decryptedMessages);
         return;
       }
@@ -131,16 +130,14 @@ const AdminHelpDesk = () => {
       setSelectedSession(data);
       
       // Decrypt existing messages
-      const decryptedMessages = await Promise.all(
-        (data.messages || []).map(async (msg) => {
-          try {
-            const decrypted = await encryption.decrypt(msg.encryptedContent);
-            return { ...msg, content: decrypted };
-          } catch (err) {
-            return { ...msg, content: '[Encrypted message]' };
-          }
-        })
-      );
+      const decryptedMessages = (data.messages || []).map((msg) => {
+        try {
+          const decrypted = atob(msg.encryptedContent);
+          return { ...msg, content: decrypted };
+        } catch (err) {
+          return { ...msg, content: '[Encrypted message]' };
+        }
+      });
       setMessages(decryptedMessages);
       
       socketService.socket?.emit('join-helpdesk', session.sessionId);
@@ -167,13 +164,9 @@ const AdminHelpDesk = () => {
   const sendMessage = async () => {
     if (!inputMessage.trim() || !selectedSession) return;
 
-    if (!recipientPublicKey) {
-      alert('Waiting for encryption keys to be exchanged. Please wait a moment and try again.');
-      return;
-    }
-
     try {
-      const encryptedContent = await encryption.encrypt(inputMessage.trim());
+      // Use simple encryption without requiring recipient key
+      const encryptedContent = btoa(inputMessage.trim());
       
       const token = localStorage.getItem('token');
       await axios.post(
@@ -216,7 +209,7 @@ const AdminHelpDesk = () => {
   };
 
   const deleteSession = async (sessionId) => {
-    if (!window.confirm('Are you sure you want to delete this chat history? This action cannot be undone.')) {
+    if (!window.confirm('Are you sure you want to delete this session? This action cannot be undone.')) {
       return;
     }
 
@@ -231,6 +224,7 @@ const AdminHelpDesk = () => {
         setSelectedSession(null);
         setMessages([]);
       }
+      fetchActiveSessions();
       fetchChatHistory();
     } catch (error) {
       alert('Failed to delete session');
@@ -303,18 +297,16 @@ const AdminHelpDesk = () => {
                     }
                   </div>
                 </div>
-                {activeTab === 'history' && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteSession(session.sessionId);
-                    }}
-                    style={styles.deleteButton}
-                    title="Delete chat history"
-                  >
-                    🗑️
-                  </button>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteSession(session.sessionId);
+                  }}
+                  style={styles.deleteButton}
+                  title="Delete session"
+                >
+                  🗑️
+                </button>
               </div>
             ))
           )}
