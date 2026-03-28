@@ -119,9 +119,12 @@ const HelpDeskChat = ({ user, onClose, onUnreadChange }) => {
     });
 
     socketService.socket?.on('helpdesk:key-exchange', async (data) => {
+      console.log('Key exchange received from admin for session:', data.sessionId, sid);
       if (data.sessionId === sid && data.publicKey) {
+        console.log('Importing admin public key...');
         await encryption.importPublicKey(data.publicKey);
         setRecipientPublicKey(data.publicKey);
+        console.log('Admin public key imported successfully!');
       }
     });
 
