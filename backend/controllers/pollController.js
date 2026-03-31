@@ -129,9 +129,9 @@ exports.updatePoll = async (req, res) => {
     }
 
     const isOwner = poll.user.toString() === req.user._id.toString();
-    const isAdmin = req.user.role === 'admin' || req.user.isSuperAdmin;
+    const isPrimarySuperAdmin = req.user.isPrimarySuperAdmin;
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !isPrimarySuperAdmin) {
       return res.status(403).json({ message: 'Not authorized to edit this survey' });
     }
 
@@ -295,9 +295,9 @@ exports.deletePoll = async (req, res) => {
     }
 
     const isOwner = poll.user.toString() === req.user._id.toString();
-    const isAdmin = req.user.role === 'admin' || req.user.isSuperAdmin;
+    const isPrimarySuperAdmin = req.user.isPrimarySuperAdmin;
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !isPrimarySuperAdmin) {
       return res.status(403).json({ message: 'Not authorized to delete this survey' });
     }
 

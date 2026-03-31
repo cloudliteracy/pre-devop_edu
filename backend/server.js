@@ -23,6 +23,7 @@ const voucherRoutes = require('./routes/vouchers');
 const helpdeskRoutes = require('./routes/helpdesk');
 const testimonialRoutes = require('./routes/testimonials');
 const aiQRRoutes = require('./routes/aiQR');
+const referralRoutes = require('./routes/referrals');
 const { startVoucherExpirationCron } = require('./cronJobs');
 
 const app = express();
@@ -58,6 +59,7 @@ app.use('/api/vouchers', voucherRoutes);
 app.use('/api/helpdesk', helpdeskRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/ai-qr', aiQRRoutes);
+app.use('/api/referrals', referralRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'CloudLiteracy API Server' });

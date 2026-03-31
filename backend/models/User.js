@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema({
   partnerTier: { type: String, enum: ['Silver', 'Gold', 'Platinum', 'Diamond'] },
   partnerAccessCode: { type: String },
   isSuperAdmin: { type: Boolean, default: false },
+  isPrimarySuperAdmin: { type: Boolean, default: false },
   canCreateSuperAdmins: { type: Boolean, default: false },
   authorizedCountry: { type: String, default: 'Any' },
   isSuspended: { type: Boolean, default: false },

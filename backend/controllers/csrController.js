@@ -12,8 +12,8 @@ const generateUniqueCode = () => {
 // Generate CSR code (Super Admin only)
 exports.generateCode = async (req, res) => {
   try {
-    if (!req.user.isSuperAdmin) {
-      return res.status(403).json({ message: 'Only super admin can generate CSR codes' });
+    if (!req.user.isPrimarySuperAdmin) {
+      return res.status(403).json({ message: 'Only primary super admin can generate CSR codes' });
     }
 
     const { codeName, expiresAt, maxUses, accessDurationMonths } = req.body;
@@ -86,7 +86,7 @@ exports.verifyCode = async (req, res) => {
 exports.getAllCodes = async (req, res) => {
   try {
     if (!req.user.isSuperAdmin) {
-      return res.status(403).json({ message: 'Only super admin can view CSR codes' });
+      return res.status(403).json({ message: 'Access denied' });
     }
 
     const codes = await CSRCode.find()
@@ -103,8 +103,8 @@ exports.getAllCodes = async (req, res) => {
 // Toggle CSR code active status (Super Admin only)
 exports.toggleCodeStatus = async (req, res) => {
   try {
-    if (!req.user.isSuperAdmin) {
-      return res.status(403).json({ message: 'Only super admin can modify CSR codes' });
+    if (!req.user.isPrimarySuperAdmin) {
+      return res.status(403).json({ message: 'Only primary super admin can modify CSR codes' });
     }
 
     const { id } = req.params;
@@ -130,7 +130,7 @@ exports.toggleCodeStatus = async (req, res) => {
 exports.getAnalytics = async (req, res) => {
   try {
     if (!req.user.isSuperAdmin) {
-      return res.status(403).json({ message: 'Only super admin can view CSR analytics' });
+      return res.status(403).json({ message: 'Access denied' });
     }
 
     const totalCodes = await CSRCode.countDocuments();
@@ -171,8 +171,8 @@ exports.getAnalytics = async (req, res) => {
 // Delete CSR code (Super Admin only)
 exports.deleteCode = async (req, res) => {
   try {
-    if (!req.user.isSuperAdmin) {
-      return res.status(403).json({ message: 'Only super admin can delete CSR codes' });
+    if (!req.user.isPrimarySuperAdmin) {
+      return res.status(403).json({ message: 'Only primary super admin can delete CSR codes' });
     }
 
     const { id } = req.params;
@@ -195,8 +195,8 @@ exports.deleteCode = async (req, res) => {
 // Renew CSR user access (Super Admin only)
 exports.renewCsrAccess = async (req, res) => {
   try {
-    if (!req.user.isSuperAdmin) {
-      return res.status(403).json({ message: 'Only super admin can renew CSR access' });
+    if (!req.user.isPrimarySuperAdmin) {
+      return res.status(403).json({ message: 'Only primary super admin can renew CSR access' });
     }
 
     const { userId } = req.params;
@@ -248,8 +248,8 @@ exports.renewCsrAccess = async (req, res) => {
 // Expel CSR user (Super Admin only)
 exports.expelCsrUser = async (req, res) => {
   try {
-    if (!req.user.isSuperAdmin) {
-      return res.status(403).json({ message: 'Only super admin can expel users' });
+    if (!req.user.isPrimarySuperAdmin) {
+      return res.status(403).json({ message: 'Only primary super admin can expel users' });
     }
 
     const { userId } = req.params;

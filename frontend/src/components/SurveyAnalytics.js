@@ -5,12 +5,43 @@ import './SurveyAnalytics.css';
 const SurveyAnalytics = ({ surveys }) => {
   const [expandedSurveys, setExpandedSurveys] = useState({});
   const [filterStatus, setFilterStatus] = useState('all');
+  const [deleting, setDeleting] = useState(null);
 
   const toggleSurveyExpansion = (surveyId) => {
     setExpandedSurveys(prev => ({
       ...prev,
       [surveyId]: !prev[surveyId]
     }));
+  };
+
+  const handleDeleteSurvey = async (surveyId, surveyTitle) => {
+    if (!window.confirm(`Are you sure you want to delete the survey "${surveyTitle}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeleting(surveyId);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/polls/${surveyId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        alert('Survey deleted successfully!');
+        window.location.reload(); // Refresh to update the list
+      } else {
+        const data = await response.json();
+        alert(data.message || 'Failed to delete survey');
+      }
+    } catch (error) {
+      alert('Error deleting survey: ' + error.message);
+    } finally {
+      setDeleting(null);
+    }
   };
 
   const formatTimeRemaining = (expiresAt) => {
@@ -88,12 +119,35 @@ const SurveyAnalytics = ({ surveys }) => {
                       </span>
                     </div>
                   </div>
-                  <button
-                    className="expand-survey-btn"
-                    onClick={() => toggleSurveyExpansion(survey._id)}
-                  >
-                    {isExpanded ? '▼ Hide Details' : '▶ View Details'}
-                  </button>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    {!survey.isActive && (
+                      <button
+                        className="delete-survey-btn"
+                        onClick={() => handleDeleteSurvey(survey._id, survey.title)}
+                        disabled={deleting === survey._id}
+                        style={{
+                          background: '#ff4444',
+                          color: '#fff',
+                          border: 'none',
+                          padding: '8px 16px',
+                          borderRadius: '6px',
+                          cursor: deleting === survey._id ? 'not-allowed' : 'pointer',
+                          fontWeight: 'bold',
+                          fontSize: '14px',
+                          opacity: deleting === survey._id ? 0.6 : 1,
+                          transition: 'all 0.3s'
+                        }}
+                      >
+                        {deleting === survey._id ? '🗑️ Deleting...' : '🗑️ Delete'}
+                      </button>
+                    )}
+                    <button
+                      className="expand-survey-btn"
+                      onClick={() => toggleSurveyExpansion(survey._id)}
+                    >
+                      {isExpanded ? '▼ Hide Details' : '▶ View Details'}
+                    </button>
+                  </div>
                 </div>
 
                 {isExpanded && (

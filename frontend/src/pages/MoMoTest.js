@@ -27,13 +27,17 @@ const MoMoTest = () => {
 
     try {
       const token = localStorage.getItem('token');
+      const referralCode = localStorage.getItem('referralCode');
       const { data } = await axios.post(
         'http://localhost:5000/api/payments/complete-mobile-money',
-        { paymentId },
+        { paymentId, referralCode },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       setMessage('Payment completed successfully! Redirecting...');
+      
+      // Clear referral code after successful payment
+      localStorage.removeItem('referralCode');
       
       setTimeout(() => {
         if (data.isPartnerPurchase) {

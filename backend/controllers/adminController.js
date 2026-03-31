@@ -3,6 +3,7 @@ const Module = require('../models/Module');
 const Payment = require('../models/Payment');
 const Progress = require('../models/Progress');
 const AuditLog = require('../models/AuditLog');
+const { sendAdminWelcomeEmail } = require('../services/emailService');
 
 exports.getDashboardStats = async (req, res) => {
   try {
@@ -257,12 +258,21 @@ exports.createAdmin = async (req, res) => {
       password: tempPassword,
       role: 'admin',
       isSuperAdmin: !!shouldBeSuperAdmin,
+      isPrimarySuperAdmin: false, // Created admins are never primary
       canCreateSuperAdmins: false, // New admins (even super admins) cannot create other super admins
       mustChangePassword: true
     });
 
     await newAdmin.save();
     console.log('Admin created successfully');
+
+    // Send welcome email with temporary password
+    try {
+      await sendAdminWelcomeEmail(newAdmin.email, newAdmin.name, tempPassword, !!shouldBeSuperAdmin);
+    } catch (emailError) {
+      console.error('Failed to send admin welcome email:', emailError);
+      // Don't block admin creation if email fails
+    }
 
     res.status(201).json({
       message: 'Admin created successfully',
@@ -281,8 +291,8 @@ exports.createAdmin = async (req, res) => {
 
 exports.getAllAdmins = async (req, res) => {
   try {
-    if (!req.user.canCreateSuperAdmins) {
-      return res.status(403).json({ message: 'Only primary super admin can fetch all admins' });
+    if (!req.user.canCreateSuperAdmins && !req.user.isSuperAdmin) {
+      return res.status(403).json({ message: 'Only super admins can fetch all admins' });
     }
     const admins = await User.find({ role: 'admin' })
       .select('-password')
@@ -418,6 +428,11 @@ exports.toggleContentUploadAccess = async (req, res) => {
 exports.getQuizAnalytics = async (req, res) => {
   try {
     const { moduleId, search = '' } = req.query;
+    
+    // Allow primary super admin, created super admins, or admins with specific permission
+    if (!req.user.canCreateSuperAdmins && !req.user.isSuperAdmin && !req.user.canViewQuizAnalytics) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
     
     const query = {};
     if (moduleId) query.moduleId = moduleId;
@@ -586,6 +601,11 @@ exports.toggleSurveyAnalyticsAccess = async (req, res) => {
 
 exports.getSurveyAnalytics = async (req, res) => {
   try {
+    // Allow primary super admin, created super admins, or admins with specific permission
+    if (!req.user.canCreateSuperAdmins && !req.user.isSuperAdmin && !req.user.canViewSurveyAnalytics) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
     const Poll = require('../models/Poll');
     
     const polls = await Poll.find()
@@ -781,6 +801,17 @@ exports.deleteUser = async (req, res) => {
       return res.status(403).json({ message: 'Cannot delete admin users' });
     }
 
+    // Log the deletion
+    const actionType = targetUser.role === 'partner' || targetUser.partnerTier ? 'PARTNER_DELETE' : 'USER_DELETE';
+    await AuditLog.create({
+      adminId: requestingUser._id,
+      action: actionType,
+      targetUserId: targetUser._id,
+      targetUserEmail: targetUser.email,
+      targetUserName: targetUser.name,
+      details: `Deleted ${targetUser.role === 'partner' ? 'partner' : 'user'}: ${targetUser.name} (${targetUser.email})${targetUser.partnerTier ? ` - Tier: ${targetUser.partnerTier}` : ''}`
+    });
+
     // Force logout the user via socket before deletion
     const io = req.app.get('io');
     if (io) {
@@ -872,8 +903,8 @@ exports.updateAdminAuthorizedCountry = async (req, res) => {
 
 exports.getAdminAuditLogs = async (req, res) => {
   try {
-    if (!req.user.canCreateSuperAdmins) {
-      return res.status(403).json({ message: 'Only primary super admin can view audit logs' });
+    if (!req.user.canCreateSuperAdmins && !req.user.isSuperAdmin) {
+      return res.status(403).json({ message: 'Only super admins can view audit logs' });
     }
 
     const { adminId } = req.params;
@@ -896,5 +927,119 @@ exports.getAdminAuditLogs = async (req, res) => {
     res.json(logs);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch audit logs', error: error.message });
+  }
+};
+
+exports.getRecentAuditLogs = async (req, res) => {
+  try {
+    if (!req.user.canCreateSuperAdmins && !req.user.isSuperAdmin) {
+      return res.status(403).json({ message: 'Only super admins can view audit logs' });
+    }
+
+    const { hours = 24, action } = req.query;
+    const timeLimit = new Date(Date.now() - hours * 60 * 60 * 1000);
+
+    const query = { createdAt: { $gte: timeLimit } };
+    if (action) {
+      query.action = action;
+    }
+
+    const logs = await AuditLog.find(query)
+      .populate('adminId', 'name email role isPrimarySuperAdmin')
+      .populate('targetUserId', 'name email role partnerTier')
+      .sort({ createdAt: -1 })
+      .limit(100);
+
+    res.json(logs);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch recent audit logs', error: error.message });
+  }
+};
+
+// Generate partner access code
+exports.generatePartnerAccessCode = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!req.user.canCreateSuperAdmins) {
+      return res.status(403).json({ message: 'Only primary super admin can generate partner access codes' });
+    }
+
+    const partner = await User.findById(id);
+    if (!partner) {
+      return res.status(404).json({ message: 'Partner not found' });
+    }
+
+    if (!partner.partnerTier) {
+      return res.status(400).json({ message: 'User is not a partner' });
+    }
+
+    // Generate unique access code with tier prefix
+    const generateCode = () => {
+      const tierPrefixes = {
+        'Silver': 'SIL',
+        'Gold': 'GOL',
+        'Platinum': 'PLA',
+        'Diamond': 'DIA'
+      };
+      const prefix = tierPrefixes[partner.partnerTier] || 'PTR';
+      const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+      return `${prefix}-${random}`;
+    };
+
+    let accessCode = generateCode();
+    let codeExists = await User.findOne({ partnerAccessCode: accessCode });
+    
+    // Ensure uniqueness
+    while (codeExists) {
+      accessCode = generateCode();
+      codeExists = await User.findOne({ partnerAccessCode: accessCode });
+    }
+
+    partner.partnerAccessCode = accessCode;
+    await partner.save();
+
+    res.json({
+      message: 'Partner access code generated successfully',
+      partner: {
+        id: partner._id,
+        name: partner.name,
+        email: partner.email,
+        partnerTier: partner.partnerTier,
+        partnerAccessCode: partner.partnerAccessCode
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to generate access code', error: error.message });
+  }
+};
+
+// Revoke partner access code
+exports.revokePartnerAccessCode = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!req.user.canCreateSuperAdmins) {
+      return res.status(403).json({ message: 'Only primary super admin can revoke partner access codes' });
+    }
+
+    const partner = await User.findById(id);
+    if (!partner) {
+      return res.status(404).json({ message: 'Partner not found' });
+    }
+
+    partner.partnerAccessCode = null;
+    await partner.save();
+
+    res.json({
+      message: 'Partner access code revoked successfully',
+      partner: {
+        id: partner._id,
+        name: partner.name,
+        email: partner.email
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to revoke access code', error: error.message });
   }
 };

@@ -69,7 +69,7 @@ const Home = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      const myTestimonial = data.testimonials.find(t => t.userId._id === user.id || t.userId._id === user._id);
+      const myTestimonial = data.testimonials.find(t => t.userId?._id === user.id || t.userId?._id === user._id);
       setUserTestimonial(myTestimonial || null);
     } catch (error) {
       console.error('Failed to check user testimonial:', error);

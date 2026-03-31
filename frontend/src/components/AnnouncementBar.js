@@ -18,6 +18,7 @@ const AnnouncementBar = () => {
   const fetchAnnouncement = async () => {
     try {
       const { data } = await axios.get('http://localhost:5000/api/announcements/active');
+      console.log('Fetched announcement:', data);
       setAnnouncement(data);
     } catch (error) {
       console.error('Failed to fetch announcement:', error);

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './CSRManagement.css';
 
-const CSRManagement = ({ user }) => {
+const CSRManagement = ({ user, isPrimarySuperAdmin }) => {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ codeName: '', expiresAt: '', maxUses: '', accessDurationMonths: '12' });
   const [codes, setCodes] = useState([]);
@@ -161,12 +161,14 @@ const CSRManagement = ({ user }) => {
     <div className="csr-management">
       <div className="csr-header">
         <h2>🎓 CSR Code Management</h2>
-        <button 
-          className="generate-code-btn"
-          onClick={() => setShowForm(!showForm)}
-        >
-          {showForm ? '✖ Cancel' : '➕ Generate Code'}
-        </button>
+        {isPrimarySuperAdmin && (
+          <button 
+            className="generate-code-btn"
+            onClick={() => setShowForm(!showForm)}
+          >
+            {showForm ? '✖ Cancel' : '➕ Generate Code'}
+          </button>
+        )}
       </div>
 
       {message.text && (
@@ -277,22 +279,31 @@ const CSRManagement = ({ user }) => {
             <div key={code._id} className="csr-code-item">
               <div className="csr-code-header">
                 <div>
-                  <div className="csr-code-value">{code.code}</div>
+                  <div className="csr-code-value">
+                    {isPrimarySuperAdmin ? code.code : 'CSR-XXXX-XXXX'}
+                  </div>
                   <div className="csr-code-name">{code.codeName}</div>
                 </div>
                 <div className="csr-code-actions">
-                  <button
-                    className={`csr-toggle-btn ${code.isActive ? 'active' : 'inactive'}`}
-                    onClick={() => handleToggleStatus(code._id)}
-                  >
-                    {code.isActive ? '✓ Active' : '✗ Inactive'}
-                  </button>
-                  <button
-                    className="csr-delete-btn"
-                    onClick={() => handleDeleteCode(code._id, code.code)}
-                  >
-                    🗑️ Delete
-                  </button>
+                  {isPrimarySuperAdmin && (
+                    <>
+                      <button
+                        className={`csr-toggle-btn ${code.isActive ? 'active' : 'inactive'}`}
+                        onClick={() => handleToggleStatus(code._id)}
+                      >
+                        {code.isActive ? '✓ Active' : '✗ Inactive'}
+                      </button>
+                      <button
+                        className="csr-delete-btn"
+                        onClick={() => handleDeleteCode(code._id, code.code)}
+                      >
+                        🗑️ Delete
+                      </button>
+                    </>
+                  )}
+                  {!isPrimarySuperAdmin && (
+                    <span style={{ color: '#999', fontSize: '12px' }}>View Only</span>
+                  )}
                 </div>
               </div>
               <div className="csr-code-details">
@@ -366,34 +377,40 @@ const CSRManagement = ({ user }) => {
                     </td>
                     <td>
                       <div className="csr-user-actions">
-                        <select 
-                          className="renew-select"
-                          onChange={(e) => {
-                            if (e.target.value) {
-                              handleRenewAccess(csrUser._id, csrUser.name, parseInt(e.target.value));
-                              e.target.value = '';
-                            }
-                          }}
-                        >
-                          <option value="">Renew Access</option>
-                          <option value="-2" style={{ color: '#ff4444' }}>-2 Months</option>
-                          <option value="-1" style={{ color: '#ff4444' }}>-1 Month</option>
-                          <option value="3" style={{ color: '#4CAF50' }}>+3 Months</option>
-                          <option value="6" style={{ color: '#4CAF50' }}>+6 Months</option>
-                          <option value="12" style={{ color: '#4CAF50' }}>+12 Months</option>
-                        </select>
-                        <button 
-                          className="suspend-csr-btn"
-                          onClick={() => handleSuspendCsrUser(csrUser._id, csrUser.name, csrUser.isSuspended)}
-                        >
-                          {csrUser.isSuspended ? 'Unsuspend' : 'Suspend'}
-                        </button>
-                        <button 
-                          className="expel-btn"
-                          onClick={() => handleExpelUser(csrUser._id, csrUser.name)}
-                        >
-                          🗑️ Delete
-                        </button>
+                        {isPrimarySuperAdmin ? (
+                          <>
+                            <select 
+                              className="renew-select"
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  handleRenewAccess(csrUser._id, csrUser.name, parseInt(e.target.value));
+                                  e.target.value = '';
+                                }
+                              }}
+                            >
+                              <option value="">Renew Access</option>
+                              <option value="-2" style={{ color: '#ff4444' }}>-2 Months</option>
+                              <option value="-1" style={{ color: '#ff4444' }}>-1 Month</option>
+                              <option value="3" style={{ color: '#4CAF50' }}>+3 Months</option>
+                              <option value="6" style={{ color: '#4CAF50' }}>+6 Months</option>
+                              <option value="12" style={{ color: '#4CAF50' }}>+12 Months</option>
+                            </select>
+                            <button 
+                              className="suspend-csr-btn"
+                              onClick={() => handleSuspendCsrUser(csrUser._id, csrUser.name, csrUser.isSuspended)}
+                            >
+                              {csrUser.isSuspended ? 'Unsuspend' : 'Suspend'}
+                            </button>
+                            <button 
+                              className="expel-btn"
+                              onClick={() => handleExpelUser(csrUser._id, csrUser.name)}
+                            >
+                              🗑️ Delete
+                            </button>
+                          </>
+                        ) : (
+                          <span style={{ color: '#999', fontSize: '12px' }}>View Only</span>
+                        )}
                       </div>
                     </td>
                   </tr>

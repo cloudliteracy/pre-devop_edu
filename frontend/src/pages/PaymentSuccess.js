@@ -12,6 +12,7 @@ const PaymentSuccess = () => {
     const verifyPayment = async () => {
       const sessionId = searchParams.get('session_id');
       const token = searchParams.get('token');
+      const referralCode = localStorage.getItem('referralCode');
       
       if (sessionId) {
         // Stripe payment
@@ -19,12 +20,14 @@ const PaymentSuccess = () => {
           const authToken = localStorage.getItem('token');
           const response = await axios.post(
             'http://localhost:5000/api/payments/verify-stripe',
-            { sessionId },
+            { sessionId, referralCode },
             { headers: { Authorization: `Bearer ${authToken}` } }
           );
 
           if (response.data.success) {
             setStatus('success');
+            // Clear referral code after successful payment
+            localStorage.removeItem('referralCode');
             if (response.data.isDonation) {
               setMessage('Thank you for your generous donation!');
               setTimeout(() => navigate('/'), 3000);
@@ -46,12 +49,14 @@ const PaymentSuccess = () => {
           const authToken = localStorage.getItem('token');
           const response = await axios.post(
             'http://localhost:5000/api/payments/verify-paypal',
-            { orderId: token },
+            { orderId: token, referralCode },
             { headers: { Authorization: `Bearer ${authToken}` } }
           );
 
           if (response.data.success) {
             setStatus('success');
+            // Clear referral code after successful payment
+            localStorage.removeItem('referralCode');
             if (response.data.isDonation) {
               setMessage('Thank you for your generous donation!');
               setTimeout(() => navigate('/'), 3000);

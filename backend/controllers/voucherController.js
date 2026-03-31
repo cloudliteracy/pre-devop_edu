@@ -24,6 +24,10 @@ const logActivity = async (voucherId, action, performedBy, details, ipAddress) =
 // Upload single voucher (Super Admin only)
 exports.uploadSingleVoucher = async (req, res) => {
   try {
+    if (!req.user.isPrimarySuperAdmin) {
+      return res.status(403).json({ message: 'Only primary super admin can upload vouchers' });
+    }
+
     const { code, examType, expirationDate, notes } = req.body;
 
     if (!code || !examType || !expirationDate) {
@@ -71,6 +75,10 @@ exports.uploadSingleVoucher = async (req, res) => {
 // Upload bulk vouchers (Super Admin only)
 exports.uploadBulkVouchers = async (req, res) => {
   try {
+    if (!req.user.isPrimarySuperAdmin) {
+      return res.status(403).json({ message: 'Only primary super admin can upload vouchers' });
+    }
+
     if (!req.file) {
       return res.status(400).json({ message: 'File is required' });
     }
@@ -191,6 +199,10 @@ exports.uploadBulkVouchers = async (req, res) => {
 // Get all vouchers (Super Admin only)
 exports.getAllVouchers = async (req, res) => {
   try {
+    if (!req.user.isSuperAdmin) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
     const { status, examType, page = 1, limit = 20 } = req.query;
     const query = {};
 
@@ -261,6 +273,10 @@ exports.getVoucherStats = async (req, res) => {
 // Assign voucher to learner (Super Admin only)
 exports.assignVoucher = async (req, res) => {
   try {
+    if (!req.user.isPrimarySuperAdmin) {
+      return res.status(403).json({ message: 'Only primary super admin can assign vouchers' });
+    }
+
     const { id } = req.params;
     const { userId } = req.body;
 
@@ -374,6 +390,10 @@ exports.redeemVoucher = async (req, res) => {
 // Revoke voucher (Super Admin only)
 exports.revokeVoucher = async (req, res) => {
   try {
+    if (!req.user.isPrimarySuperAdmin) {
+      return res.status(403).json({ message: 'Only primary super admin can revoke vouchers' });
+    }
+
     const { id } = req.params;
 
     const voucher = await Voucher.findById(id);

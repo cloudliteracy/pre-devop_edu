@@ -67,14 +67,24 @@ const Navbar = () => {
             Polls
           </Link>
           {isAuthenticated && user?.role !== 'admin' && !user?.isSuperAdmin && user?.role !== 'partner' && (
-            <Link 
-              to={location.pathname === '/vouchers' ? '/' : '/vouchers'} 
-              style={getLinkStyle('vouchers')}
-              onMouseEnter={() => setHoveredLink('vouchers')}
-              onMouseLeave={() => setHoveredLink(null)}
-            >
-              🎓 AWS Vouchers
-            </Link>
+            <>
+              <Link 
+                to={location.pathname === '/vouchers' ? '/' : '/vouchers'} 
+                style={getLinkStyle('vouchers')}
+                onMouseEnter={() => setHoveredLink('vouchers')}
+                onMouseLeave={() => setHoveredLink(null)}
+              >
+                🎓 AWS Vouchers
+              </Link>
+              <Link 
+                to={location.pathname === '/referrals' ? '/' : '/referrals'} 
+                style={getLinkStyle('referrals')}
+                onMouseEnter={() => setHoveredLink('referrals')}
+                onMouseLeave={() => setHoveredLink(null)}
+              >
+                💰 Referrals
+              </Link>
+            </>
           )}
 
           <Link 

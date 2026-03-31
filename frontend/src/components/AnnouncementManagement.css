@@ -260,3 +260,109 @@
     gap: 8px;
   }
 }
+
+.announcement-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #333;
+}
+
+.announcement-tabs button {
+  background: transparent;
+  color: #999;
+  border: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s;
+}
+
+.announcement-tabs button:hover {
+  color: #FFD700;
+}
+
+.announcement-tabs button.active {
+  color: #FFD700;
+  border-bottom-color: #FFD700;
+}
+
+.title-with-status {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex: 1;
+}
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.status-badge.approved {
+  background: #4CAF50;
+  color: #fff;
+}
+
+.status-badge.pending {
+  background: #ff9800;
+  color: #fff;
+}
+
+.status-badge.rejected {
+  background: #ff4444;
+  color: #fff;
+}
+
+.rejection-reason {
+  background: #2a1a1a;
+  border-left: 4px solid #ff4444;
+  padding: 12px;
+  margin: 15px 0;
+  color: #ffcccc;
+  border-radius: 4px;
+}
+
+.rejection-reason strong {
+  color: #ff4444;
+}
+
+.approve-btn {
+  background: #4CAF50;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.approve-btn:hover {
+  background: #45a049;
+}
+
+.reject-btn {
+  background: #ff4444;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.reject-btn:hover {
+  background: #ff0000;
+}
+
+.announcement-item.pending {
+  border: 2px solid #ff9800;
+  background: #1f1a0d;
+}

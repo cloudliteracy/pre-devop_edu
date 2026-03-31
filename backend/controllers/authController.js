@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { sendPasswordResetEmail } = require('../services/emailService');
+const { sendPasswordResetEmail, sendPartnerWelcomeEmail, sendUserWelcomeEmail, sendCSRWelcomeEmail, sendAdminWelcomeEmail } = require('../services/emailService');
 const geoip = require('geoip-lite');
 const AuditLog = require('../models/AuditLog');
 
@@ -55,6 +55,14 @@ exports.register = async (req, res) => {
       code.usedBy.push({ userId: user._id, usedAt: new Date() });
       await code.save();
 
+      // Send CSR welcome email
+      try {
+        await sendCSRWelcomeEmail(user.email, user.name, code.accessDurationMonths || 12);
+      } catch (emailError) {
+        console.error('Failed to send CSR welcome email:', emailError);
+        // Don't block registration if email fails
+      }
+
       const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
       return res.status(201).json({ 
@@ -74,6 +82,14 @@ exports.register = async (req, res) => {
 
     const user = new User(userData);
     await user.save();
+
+    // Send welcome email
+    try {
+      await sendUserWelcomeEmail(user.email, user.name);
+    } catch (emailError) {
+      console.error('Failed to send user welcome email:', emailError);
+      // Don't block registration if email fails
+    }
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
@@ -129,6 +145,21 @@ exports.login = async (req, res) => {
       await user.save();
     }
 
+    // Send welcome email on first login for admins (if mustChangePassword is true, it's first login)
+    if ((user.role === 'admin' || user.isSuperAdmin) && user.mustChangePassword) {
+      try {
+        await sendAdminWelcomeEmail(
+          user.email, 
+          user.name, 
+          'Please change your password', 
+          user.isSuperAdmin
+        );
+      } catch (emailError) {
+        console.error('Failed to send admin welcome email on login:', emailError);
+        // Don't block login if email fails
+      }
+    }
+
     res.json({ 
       token, 
       user: { 
@@ -138,6 +169,7 @@ exports.login = async (req, res) => {
         role: user.role,
         profilePhoto: user.profilePhoto,
         isSuperAdmin: user.isSuperAdmin,
+        isPrimarySuperAdmin: user.isPrimarySuperAdmin,
         canCreateSuperAdmins: user.canCreateSuperAdmins,
         mustChangePassword: user.mustChangePassword,
         country: user.country
@@ -170,6 +202,19 @@ exports.partnerLogin = async (req, res) => {
       return res.status(403).json({ message: 'Your account has been suspended. Please contact the administrator.' });
     }
 
+    // Send welcome email with access code on successful login
+    try {
+      await sendPartnerWelcomeEmail(
+        user.email,
+        user.name,
+        user.partnerTier,
+        user.partnerAccessCode
+      );
+    } catch (emailError) {
+      console.error('Failed to send partner welcome email:', emailError);
+      // Don't block login if email fails
+    }
+
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     res.json({ 
@@ -181,6 +226,7 @@ exports.partnerLogin = async (req, res) => {
         role: user.role,
         profilePhoto: user.profilePhoto,
         isSuperAdmin: user.isSuperAdmin,
+        isPrimarySuperAdmin: user.isPrimarySuperAdmin,
         canCreateSuperAdmins: user.canCreateSuperAdmins,
         country: user.country,
         partnerTier: user.partnerTier,
@@ -310,6 +356,7 @@ exports.updateProfilePhoto = async (req, res) => {
         role: user.role,
         profilePhoto: user.profilePhoto,
         isSuperAdmin: user.isSuperAdmin,
+        isPrimarySuperAdmin: user.isPrimarySuperAdmin,
         canCreateSuperAdmins: user.canCreateSuperAdmins,
         mustChangePassword: user.mustChangePassword,
         country: user.country

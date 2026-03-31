@@ -33,7 +33,7 @@ const Announcements = () => {
   return (
     <div style={styles.container}>
       <div style={styles.content}>
-        <AnnouncementManagement user={user} />
+        <AnnouncementManagement user={user} isPrimarySuperAdmin={user?.isPrimarySuperAdmin} />
       </div>
     </div>
   );

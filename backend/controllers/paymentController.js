@@ -1,10 +1,16 @@
 const Payment = require('../models/Payment');
 const User = require('../models/User');
 const Module = require('../models/Module');
+const ReferralCode = require('../models/ReferralCode');
+const Referral = require('../models/Referral');
+const AffiliatePartner = require('../models/AffiliatePartner');
+const Coupon = require('../models/Coupon');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const axios = require('axios');
 const mtnMomoService = require('../services/mtnMomoService');
 const orangeMoneyService = require('../services/orangeMoneyService');
+const { generatePartnerAccessCode } = require('../utils/partnerCodeGenerator');
+const { sendPartnerWelcomeEmail } = require('../services/emailService');
 
 const PAYPAL_API = process.env.PAYPAL_MODE === 'live' 
   ? 'https://api-m.paypal.com' 
@@ -106,7 +112,7 @@ exports.verifyPayment = async (req, res) => {
 
 exports.verifyStripePayment = async (req, res) => {
   try {
-    const { sessionId } = req.body;
+    const { sessionId, referralCode } = req.body;
     const userId = req.user._id;
 
     const session = await stripe.checkout.sessions.retrieve(sessionId);
@@ -118,12 +124,12 @@ exports.verifyStripePayment = async (req, res) => {
         payment.status = 'completed';
         await payment.save();
 
+        // Process referral if code provided
+        await processReferral(userId, payment.amount, referralCode);
+
         if (payment.isPartnerPurchase) {
-          const crypto = require('crypto');
-          const accessCode = 'PTR-' + crypto.randomBytes(4).toString('hex').toUpperCase();
-          
+          const accessCode = generatePartnerAccessCode(payment.partnerTier);
           const targetUser = await User.findById(userId);
-          // NEW LOGIC: Admin stays Admin, Learners become Partner
           const newRole = (targetUser.role === 'admin' || targetUser.isSuperAdmin) ? 'admin' : 'partner';
           
           await User.findByIdAndUpdate(userId, {
@@ -134,6 +140,18 @@ exports.verifyStripePayment = async (req, res) => {
               isCsrUser: true 
             }
           });
+
+          // Send welcome email with access code
+          try {
+            await sendPartnerWelcomeEmail(
+              targetUser.email,
+              targetUser.name,
+              payment.partnerTier,
+              accessCode
+            );
+          } catch (emailError) {
+            console.error('Failed to send partner welcome email:', emailError);
+          }
         } else if (payment.moduleId) {
           await User.findByIdAndUpdate(userId, {
             $addToSet: { purchasedModules: payment.moduleId }
@@ -158,7 +176,7 @@ exports.verifyStripePayment = async (req, res) => {
 
 exports.verifyPayPalPayment = async (req, res) => {
   try {
-    const { orderId } = req.body;
+    const { orderId, referralCode } = req.body;
     const userId = req.user._id;
 
     const accessToken = await getPayPalAccessToken();
@@ -176,9 +194,13 @@ exports.verifyPayPalPayment = async (req, res) => {
         payment.status = 'completed';
         await payment.save();
 
+        // Process referral if code provided
+        await processReferral(userId, payment.amount, referralCode);
+
         if (payment.isPartnerPurchase) {
-          const crypto = require('crypto');
-          const accessCode = 'PTR-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+          const accessCode = generatePartnerAccessCode(payment.partnerTier);
+          const targetUser = await User.findById(userId);
+          
           await User.findByIdAndUpdate(userId, {
             $set: { 
               role: 'partner', 
@@ -187,6 +209,18 @@ exports.verifyPayPalPayment = async (req, res) => {
               isCsrUser: true 
             }
           });
+
+          // Send welcome email with access code
+          try {
+            await sendPartnerWelcomeEmail(
+              targetUser.email,
+              targetUser.name,
+              payment.partnerTier,
+              accessCode
+            );
+          } catch (emailError) {
+            console.error('Failed to send partner welcome email:', emailError);
+          }
         } else if (payment.moduleId) {
           await User.findByIdAndUpdate(userId, {
             $addToSet: { purchasedModules: payment.moduleId }
@@ -212,7 +246,7 @@ exports.verifyPayPalPayment = async (req, res) => {
 // Test endpoint to simulate MTN MoMo / Orange Money payment completion
 exports.completeMobileMoneyPayment = async (req, res) => {
   try {
-    const { paymentId } = req.body;
+    const { paymentId, referralCode } = req.body;
     const userId = req.user._id;
 
     const payment = await Payment.findById(paymentId);
@@ -233,10 +267,11 @@ exports.completeMobileMoneyPayment = async (req, res) => {
     payment.status = 'completed';
     await payment.save();
 
+    // Process referral if code provided
+    await processReferral(userId, payment.amount, referralCode);
+
     if (payment.isPartnerPurchase) {
-      const crypto = require('crypto');
-      const accessCode = 'PTR-' + crypto.randomBytes(4).toString('hex').toUpperCase();
-      
+      const accessCode = generatePartnerAccessCode(payment.partnerTier);
       const targetUser = await User.findById(userId);
       const newRole = (targetUser.role === 'admin' || targetUser.isSuperAdmin) ? 'admin' : 'partner';
       
@@ -248,6 +283,18 @@ exports.completeMobileMoneyPayment = async (req, res) => {
           isCsrUser: true 
         }
       });
+
+      // Send welcome email with access code
+      try {
+        await sendPartnerWelcomeEmail(
+          targetUser.email,
+          targetUser.name,
+          payment.partnerTier,
+          accessCode
+        );
+      } catch (emailError) {
+        console.error('Failed to send partner welcome email:', emailError);
+      }
     } else if (payment.moduleId) {
       await User.findByIdAndUpdate(userId, {
         $addToSet: { purchasedModules: payment.moduleId }
@@ -287,15 +334,11 @@ exports.checkMTNMoMoStatus = async (req, res) => {
     const result = await mtnMomoService.getTransactionStatus(referenceId);
 
     if (result.success && result.status === 'SUCCESSFUL') {
-      // Update payment status
       payment.status = 'completed';
       await payment.save();
 
-      // Grant access to module or partner status
       if (payment.isPartnerPurchase) {
-        const crypto = require('crypto');
-        const accessCode = 'PTR-' + crypto.randomBytes(4).toString('hex').toUpperCase();
-        
+        const accessCode = generatePartnerAccessCode(payment.partnerTier);
         const targetUser = await User.findById(userId);
         const newRole = (targetUser.role === 'admin' || targetUser.isSuperAdmin) ? 'admin' : 'partner';
         
@@ -307,6 +350,18 @@ exports.checkMTNMoMoStatus = async (req, res) => {
             isCsrUser: true 
           }
         });
+
+        // Send welcome email with access code
+        try {
+          await sendPartnerWelcomeEmail(
+            targetUser.email,
+            targetUser.name,
+            payment.partnerTier,
+            accessCode
+          );
+        } catch (emailError) {
+          console.error('Failed to send partner welcome email:', emailError);
+        }
       } else if (payment.moduleId) {
         await User.findByIdAndUpdate(userId, {
           $addToSet: { purchasedModules: payment.moduleId }
@@ -372,15 +427,11 @@ exports.checkOrangeMoneyStatus = async (req, res) => {
     const result = await orangeMoneyService.getTransactionStatus(orderId);
 
     if (result.success && result.status === 'SUCCESSFUL') {
-      // Update payment status
       payment.status = 'completed';
       await payment.save();
 
-      // Grant access to module or partner status
       if (payment.isPartnerPurchase) {
-        const crypto = require('crypto');
-        const accessCode = 'PTR-' + crypto.randomBytes(4).toString('hex').toUpperCase();
-        
+        const accessCode = generatePartnerAccessCode(payment.partnerTier);
         const targetUser = await User.findById(userId);
         const newRole = (targetUser.role === 'admin' || targetUser.isSuperAdmin) ? 'admin' : 'partner';
         
@@ -392,6 +443,18 @@ exports.checkOrangeMoneyStatus = async (req, res) => {
             isCsrUser: true 
           }
         });
+
+        // Send welcome email with access code
+        try {
+          await sendPartnerWelcomeEmail(
+            targetUser.email,
+            targetUser.name,
+            payment.partnerTier,
+            accessCode
+          );
+        } catch (emailError) {
+          console.error('Failed to send partner welcome email:', emailError);
+        }
       } else if (payment.moduleId) {
         await User.findByIdAndUpdate(userId, {
           $addToSet: { purchasedModules: payment.moduleId }
@@ -584,5 +647,79 @@ async function handleOrangeMoney(description, amount, payment, phoneNumber) {
     }
     
     throw error;
+  }
+}
+
+// Process referral rewards after successful payment
+async function processReferral(userId, paymentAmount, referralCode) {
+  try {
+    if (!referralCode) return;
+
+    const referralCodeDoc = await ReferralCode.findOne({ 
+      code: referralCode.toUpperCase(), 
+      isActive: true 
+    });
+    
+    if (!referralCodeDoc) return;
+
+    // Don't allow self-referral
+    if (referralCodeDoc.userId.toString() === userId.toString()) return;
+
+    // Check if referral already exists (prevent duplicates)
+    const existingReferral = await Referral.findOne({
+      referrerId: referralCodeDoc.userId,
+      referredUserId: userId,
+      referralCode: referralCode.toUpperCase()
+    });
+
+    if (existingReferral) {
+      console.log(`Referral already processed: ${referralCode} -> User ${userId}`);
+      return; // Skip if already processed
+    }
+
+    // Create referral record
+    await Referral.create({
+      referrerId: referralCodeDoc.userId,
+      referredUserId: userId,
+      referralCode: referralCode.toUpperCase(),
+      status: 'completed',
+      rewardType: 'discount',
+      rewardAmount: paymentAmount * 0.10, // 10% discount value
+      conversionDate: new Date()
+    });
+
+    // Update referral code stats
+    referralCodeDoc.conversions += 1;
+    referralCodeDoc.revenue += paymentAmount;
+    await referralCodeDoc.save();
+
+    // Check if referrer is affiliate
+    const affiliate = await AffiliatePartner.findOne({ 
+      userId: referralCodeDoc.userId, 
+      isApproved: true 
+    });
+    
+    if (affiliate) {
+      // Affiliate gets commission
+      const commission = paymentAmount * (affiliate.commissionRate / 100);
+      affiliate.pendingEarnings += commission;
+      affiliate.totalEarnings += commission;
+      await affiliate.save();
+    } else {
+      // Regular referrer gets 20% discount coupon for next purchase
+      const couponCode = `REF${Date.now().toString().slice(-6)}`;
+      await Coupon.create({
+        userId: referralCodeDoc.userId,
+        code: couponCode,
+        discountPercent: 20,
+        discountAmount: 0,
+        expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 days
+      });
+    }
+
+    console.log(`Referral processed: ${referralCode} -> User ${userId}`);
+  } catch (error) {
+    console.error('Error processing referral:', error);
+    // Don't throw error - referral processing shouldn't block payment
   }
 }

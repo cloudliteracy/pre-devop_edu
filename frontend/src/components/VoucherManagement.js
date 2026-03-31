@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const VoucherManagement = () => {
+const VoucherManagement = ({ isPrimarySuperAdmin }) => {
   const [vouchers, setVouchers] = useState([]);
   const [stats, setStats] = useState(null);
   const [activityLogs, setActivityLogs] = useState([]);
@@ -182,20 +182,24 @@ const VoucherManagement = () => {
 
       {/* Tabs */}
       <div style={styles.tabs}>
-        <button onClick={() => setActiveTab('upload')} style={{
-          ...styles.tab,
-          backgroundColor: activeTab === 'upload' ? '#FFD700' : '#1a1a1a',
-          color: activeTab === 'upload' ? '#000' : '#FFD700'
-        }}>
-          Upload Vouchers
-        </button>
-        <button onClick={() => setActiveTab('assign')} style={{
-          ...styles.tab,
-          backgroundColor: activeTab === 'assign' ? '#FFD700' : '#1a1a1a',
-          color: activeTab === 'assign' ? '#000' : '#FFD700'
-        }}>
-          Assign Vouchers
-        </button>
+        {isPrimarySuperAdmin && (
+          <button onClick={() => setActiveTab('upload')} style={{
+            ...styles.tab,
+            backgroundColor: activeTab === 'upload' ? '#FFD700' : '#1a1a1a',
+            color: activeTab === 'upload' ? '#000' : '#FFD700'
+          }}>
+            Upload Vouchers
+          </button>
+        )}
+        {isPrimarySuperAdmin && (
+          <button onClick={() => setActiveTab('assign')} style={{
+            ...styles.tab,
+            backgroundColor: activeTab === 'assign' ? '#FFD700' : '#1a1a1a',
+            color: activeTab === 'assign' ? '#000' : '#FFD700'
+          }}>
+            Assign Vouchers
+          </button>
+        )}
         <button onClick={() => setActiveTab('list')} style={{
           ...styles.tab,
           backgroundColor: activeTab === 'list' ? '#FFD700' : '#1a1a1a',
@@ -213,7 +217,7 @@ const VoucherManagement = () => {
       </div>
 
       {/* Upload Tab */}
-      {activeTab === 'upload' && (
+      {activeTab === 'upload' && isPrimarySuperAdmin && (
         <div style={styles.section}>
           <div style={styles.uploadGrid}>
             {/* Single Upload */}
@@ -300,7 +304,7 @@ const VoucherManagement = () => {
       )}
 
       {/* Assign Tab */}
-      {activeTab === 'assign' && (
+      {activeTab === 'assign' && isPrimarySuperAdmin && (
         <div style={styles.section}>
           <h3 style={styles.sectionTitle}>Assign Voucher to User</h3>
           <form onSubmit={handleAssign} style={styles.assignForm}>
@@ -410,13 +414,16 @@ const VoucherManagement = () => {
                   {new Date(voucher.expirationDate).toLocaleDateString()}
                 </div>
                 <div style={styles.tableCell}>
-                  {voucher.status === 'assigned' && (
+                  {isPrimarySuperAdmin && voucher.status === 'assigned' && (
                     <button
                       onClick={() => handleRevoke(voucher._id)}
                       style={styles.revokeButton}
                     >
                       Revoke
                     </button>
+                  )}
+                  {!isPrimarySuperAdmin && (
+                    <span style={{ color: '#999', fontSize: '12px' }}>View Only</span>
                   )}
                 </div>
               </div>

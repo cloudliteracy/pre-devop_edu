@@ -1,4 +1,6 @@
 const nodemailer = require('nodemailer');
+const { generatePartnerWelcomeEmail } = require('../utils/partnerEmailTemplate');
+const { generateAdminWelcomeEmail, generateUserWelcomeEmail, generateCSRWelcomeEmail } = require('../utils/welcomeEmailTemplates');
 
 const createTransporter = () => {
   if (process.env.EMAIL_SERVICE === 'gmail') {
@@ -93,4 +95,86 @@ const sendPasswordResetEmail = async (email, resetUrl, userName) => {
   }
 };
 
-module.exports = { sendPasswordResetEmail };
+const sendPartnerWelcomeEmail = async (email, partnerName, partnerTier, accessCode) => {
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: `"CloudLiteracy" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+      to: email,
+      subject: `🌟 Welcome ${partnerTier} Partner - Your Lifetime Access Code`,
+      html: generatePartnerWelcomeEmail(partnerName, partnerTier, accessCode)
+    };
+
+    await transporter.sendMail(mailOptions);
+    return { success: true };
+  } catch (error) {
+    console.error('Partner welcome email error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+const sendAdminWelcomeEmail = async (email, adminName, tempPassword, isSuperAdmin) => {
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: `"CloudLiteracy" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+      to: email,
+      subject: `🌟 Welcome ${isSuperAdmin ? 'Super Admin' : 'Admin'} - CloudLiteracy`,
+      html: generateAdminWelcomeEmail(adminName, tempPassword, isSuperAdmin)
+    };
+
+    await transporter.sendMail(mailOptions);
+    return { success: true };
+  } catch (error) {
+    console.error('Admin welcome email error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+const sendUserWelcomeEmail = async (email, userName) => {
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: `"CloudLiteracy" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+      to: email,
+      subject: '🌟 Welcome to CloudLiteracy - Your Learning Journey Begins',
+      html: generateUserWelcomeEmail(userName)
+    };
+
+    await transporter.sendMail(mailOptions);
+    return { success: true };
+  } catch (error) {
+    console.error('User welcome email error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+const sendCSRWelcomeEmail = async (email, userName, accessDuration) => {
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: `"CloudLiteracy" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+      to: email,
+      subject: '🌟 CSR Program - Free Access Granted - CloudLiteracy',
+      html: generateCSRWelcomeEmail(userName, accessDuration)
+    };
+
+    await transporter.sendMail(mailOptions);
+    return { success: true };
+  } catch (error) {
+    console.error('CSR welcome email error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+module.exports = { 
+  sendPasswordResetEmail, 
+  sendPartnerWelcomeEmail, 
+  sendAdminWelcomeEmail, 
+  sendUserWelcomeEmail, 
+  sendCSRWelcomeEmail 
+};

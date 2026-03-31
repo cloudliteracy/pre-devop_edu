@@ -5,23 +5,40 @@ const PartnerManagement = () => {
   const [partners, setPartners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    setCurrentUser(user);
     fetchPartners();
   }, []);
 
   const fetchPartners = async () => {
     try {
       setLoading(true);
+      setError('');
       const token = localStorage.getItem('token');
-      const { data } = await axios.post('http://localhost:5000/api/admin/users/query?limit=100', 
+      const { data } = await axios.post('http://localhost:5000/api/admin/users/query?limit=1000', 
         { role: 'partner' }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      console.log('Partners API response:', data);
+      console.log('Total partners found:', data.users?.length || 0);
+      
+      if (data.users && data.users.length > 0) {
+        console.log('Partner details:', data.users.map(p => ({
+          name: p.name,
+          email: p.email,
+          tier: p.partnerTier,
+          code: p.partnerAccessCode
+        })));
+      }
+      
       setPartners(data.users || []);
     } catch (err) {
-      console.error(err);
-      setError('Failed to load partners data');
+      console.error('Fetch partners error:', err);
+      const errorMsg = err.response?.data?.message || 'Failed to load partners data';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -56,6 +73,36 @@ const PartnerManagement = () => {
     }
   };
 
+  const handleGenerateCode = async (id, name) => {
+    if (!window.confirm(`Generate lifetime access code for partner "${name}"?`)) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const { data } = await axios.post(`http://localhost:5000/api/admin/partners/${id}/generate-code`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert(`Access code generated: ${data.partner.partnerAccessCode}`);
+      fetchPartners();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to generate access code');
+    }
+  };
+
+  const handleRevokeCode = async (id, name) => {
+    if (!window.confirm(`Revoke access code for partner "${name}"?\n\nThis will invalidate their lifetime access code.`)) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`http://localhost:5000/api/admin/partners/${id}/revoke-code`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert('Access code revoked successfully');
+      fetchPartners();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to revoke access code');
+    }
+  };
+
   if (loading) return <div style={{ color: '#FFD700', padding: '20px' }}>Loading partners...</div>;
   if (error) return <div style={{ color: '#ff4444', padding: '20px' }}>{error}</div>;
 
@@ -65,7 +112,14 @@ const PartnerManagement = () => {
       <p style={styles.subtitle}>Manage integrated CSR partners and review tier assignments.</p>
       
       {partners.length === 0 ? (
-        <p style={{ color: '#ccc' }}>No partners have registered yet.</p>
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <p style={{ color: '#ccc', fontSize: '18px', marginBottom: '20px' }}>
+            No partners have registered yet.
+          </p>
+          <p style={{ color: '#888', fontSize: '14px' }}>
+            Partners are created when users purchase a partner package (Gold, Platinum, or Diamond) from the Partner Packages page.
+          </p>
+        </div>
       ) : (
         <div style={styles.table}>
           <div style={styles.tableHeader}>
@@ -96,7 +150,11 @@ const PartnerManagement = () => {
                 </span>
               </div>
               <div style={styles.cell}>
-                <code style={styles.codeBadge}>{partner.partnerAccessCode || 'N/A'}</code>
+                {partner.partnerAccessCode ? (
+                  <code style={styles.codeBadge}>{partner.partnerAccessCode}</code>
+                ) : (
+                  <span style={{ color: '#666', fontSize: '12px' }}>Not Generated</span>
+                )}
               </div>
               <div style={styles.cell}>{new Date(partner.createdAt).toLocaleDateString()}</div>
               <div style={styles.cell}>
@@ -108,21 +166,47 @@ const PartnerManagement = () => {
               </div>
               <div style={styles.cell}>
                 <div style={styles.actionGroup}>
-                  <button 
-                    onClick={() => handleSuspend(partner._id, partner.name, partner.isSuspended)}
-                    style={{
-                      ...styles.actionBtn,
-                      backgroundColor: partner.isSuspended ? '#4CAF50' : '#ff9800'
-                    }}
-                  >
-                    {partner.isSuspended ? '✓' : '⏸'}
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(partner._id, partner.name)}
-                    style={{...styles.actionBtn, backgroundColor: '#ff4444'}}
-                  >
-                    🗑️
-                  </button>
+                  {currentUser?.isPrimarySuperAdmin && (
+                    <>
+                      {!partner.partnerAccessCode ? (
+                        <button 
+                          onClick={() => handleGenerateCode(partner._id, partner.name)}
+                          style={{...styles.actionBtn, backgroundColor: '#4CAF50'}}
+                          title="Generate Access Code"
+                        >
+                          🔑
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => handleRevokeCode(partner._id, partner.name)}
+                          style={{...styles.actionBtn, backgroundColor: '#ff9800'}}
+                          title="Revoke Access Code"
+                        >
+                          🚫
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => handleSuspend(partner._id, partner.name, partner.isSuspended)}
+                        style={{
+                          ...styles.actionBtn,
+                          backgroundColor: partner.isSuspended ? '#4CAF50' : '#ff9800'
+                        }}
+                        title={partner.isSuspended ? 'Unsuspend' : 'Suspend'}
+                      >
+                        {partner.isSuspended ? '✓' : '⏸'}
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(partner._id, partner.name)}
+                        style={{...styles.actionBtn, backgroundColor: '#ff4444'}}
+                        title="Delete Partner"
+                      >
+                        🗑️
+                      </button>
+                    </>
+                  )}
+                  {!currentUser?.isPrimarySuperAdmin && (
+                    <span style={{ color: '#666', fontSize: '12px' }}>View Only</span>
+                  )}
                 </div>
               </div>
             </div>

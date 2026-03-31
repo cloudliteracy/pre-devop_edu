@@ -26,6 +26,7 @@ import Profile from './pages/Profile';
 import PartnerPackages from './pages/PartnerPackages';
 import MoMoTest from './pages/MoMoTest';
 import AIQR from './pages/AIQR';
+import ReferralDashboard from './pages/ReferralDashboard';
 import socketService from './services/socket';
 
 function AppContent() {
@@ -95,6 +96,7 @@ function AppContent() {
           <Route path="/admin/change-password-required" element={<ForcePasswordChange />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/partner-packages" element={<PartnerPackages />} />
+          <Route path="/referrals" element={<ReferralDashboard />} />
         </Routes>
       </div>
       <Footer />
@@ -105,7 +107,7 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AppContent />
       </Router>
     </AuthProvider>

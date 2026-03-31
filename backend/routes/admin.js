@@ -25,5 +25,10 @@ router.delete('/users/:id/delete', auth, adminAuth, adminController.deleteUser);
 router.put('/admins/:id/toggle-helpdesk-access', auth, adminAuth, adminController.toggleHelpDeskAccess);
 router.put('/admins/:id/authorized-country', auth, adminAuth, adminController.updateAdminAuthorizedCountry);
 router.get('/audit-logs/:adminId', auth, adminAuth, adminController.getAdminAuditLogs);
+router.get('/audit-logs-recent', auth, adminAuth, adminController.getRecentAuditLogs);
+
+// Partner management routes
+router.post('/partners/:id/generate-code', auth, adminAuth, adminController.generatePartnerAccessCode);
+router.put('/partners/:id/revoke-code', auth, adminAuth, adminController.revokePartnerAccessCode);
 
 module.exports = router;
