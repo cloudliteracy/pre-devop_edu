@@ -18,7 +18,7 @@
    - Branch: **gh-pages** / **(root)**
 4. Click **Save**
 
-### Step 2: Push to Main Branch
+### Step 2: Push to Main Branchh
 
 ```bash
 git add .
