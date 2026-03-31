@@ -11,7 +11,7 @@
 
 ### Step 1: Enable GitHub Pages
 
-1. Go to your GitHub repository
+1. Go to your GitHub repo
 2. Click **Settings** → **Pages** (left sidebar)
 3. Under **Source**, select:
    - Source: **Deploy from a branch**
