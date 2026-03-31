@@ -2,6 +2,7 @@
   "name": "cloudliteracy-frontend",
   "version": "1.0.0",
   "description": "Frontend for DevOps Educational Platform",
+  "homepage": ".",
   "private": true,
   "scripts": {
     "start": "react-scripts start",
