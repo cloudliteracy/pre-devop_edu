@@ -396,9 +396,20 @@ security_check() {
   success ".gitignore is protecting .env files."
 
   # --- Check if .env is already being tracked by git ---
-  TRACKED_ENV_FILES=$(git ls-files | grep -E '\.env(\.|$)' 2>/dev/null)
+  # Whitelist: .env.example and .env.sample are safe to track
+  ALL_TRACKED_ENV=$(git ls-files | grep -E '\.env(\.|$)' 2>/dev/null)
+  TRACKED_ENV_FILES=$(echo "$ALL_TRACKED_ENV" | grep -vE '\.env\.(example|sample|template|placeholder)$' | grep -v '^$')
+  WHITELISTED_ENV=$(echo "$ALL_TRACKED_ENV" | grep -E '\.env\.(example|sample|template|placeholder)$' | grep -v '^$')
+
+  if [[ -n "$WHITELISTED_ENV" ]]; then
+    info "Safe .env template file(s) detected (whitelisted — safe to push):"
+    while IFS= read -r wl_file; do
+      echo -e "  ${GREEN}✔ $wl_file${NC} (template — no real secrets)"
+    done <<< "$WHITELISTED_ENV"
+  fi
+
   if [[ -n "$TRACKED_ENV_FILES" ]]; then
-    warn "The following .env file(s) are currently tracked by Git:"
+    warn "The following .env file(s) with real secrets are tracked by Git:"
     echo -e "${RED}$TRACKED_ENV_FILES${NC}"
     read -rn 1 -p "$(echo -e "${YELLOW}Do you want to untrack them now? (Y/n): ${NC}")" untrack_choice; echo
     case "$untrack_choice" in
@@ -410,14 +421,16 @@ security_check() {
         done <<< "$TRACKED_ENV_FILES"
         ;;
       *)
-        error "⚠ Refusing to push: tracked .env file(s) detected. Please untrack them before pushing."
-        exit 1
+        warn "Keeping tracked .env file(s). Proceeding with caution."
+        warn "It is strongly recommended to untrack real .env files from Git."
+        log_summary "Security: tracked .env file(s) kept by user choice"
         ;;
     esac
   fi
 
-  # --- Scan staged files for .env ---
-  STAGED_ENV=$(git diff --cached --name-only | grep -E '\.env(\.|$)' 2>/dev/null)
+  # --- Scan staged files for .env (excluding whitelisted templates) ---
+  ALL_STAGED_ENV=$(git diff --cached --name-only | grep -E '\.env(\.|$)' 2>/dev/null)
+  STAGED_ENV=$(echo "$ALL_STAGED_ENV" | grep -vE '\.env\.(example|sample|template|placeholder)$' | grep -v '^$')
   if [[ -n "$STAGED_ENV" ]]; then
     error "SECURITY ABORT: The following .env file(s) are staged and cannot be pushed:"
     echo -e "${RED}$STAGED_ENV${NC}"

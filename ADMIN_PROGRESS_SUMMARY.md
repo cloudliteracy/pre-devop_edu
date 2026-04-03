@@ -92,7 +92,7 @@
 **File:** `backend/createAdmin.js`
 - Creates admin user:
   - Email: admin@cloudliteracy.com
-  - Password: admin123
+  - Password: ***
   - Role: admin
 - Run: `node createAdmin.js`
 
@@ -185,7 +185,7 @@ node createAdmin.js
 
 **Credentials:**
 - Email: admin@cloudliteracy.com
-- Password: admin123
+- Password: ***
 - ⚠️ Change password after first login!
 
 ### 2. Restart Backend Server
